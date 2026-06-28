@@ -28,7 +28,10 @@
     "build": "scripts/build-occt.sh && scripts/build-wasm.sh",
     "gen": "scripts/gen-bindings.sh",
     "test": "node --test test/smoke.test.mjs test/api.test.mjs",
-    "test:browser": "node --test test/browser.test.mjs"
+    "test:browser": "node --test test/browser.test.mjs",
+    "docs:api": "python3 scripts/gen_docs_api.py",
+    "docs:build": "python3 scripts/gen_docs_api.py && mkdocs build",
+    "docs:serve": "python3 scripts/gen_docs_api.py && mkdocs serve"
   },
   "devDependencies": {
     "playwright": "^1.61.1"

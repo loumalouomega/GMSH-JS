@@ -13,3 +13,6 @@ npm-debug.log*
 # Editor / OS
 .DS_Store
 *.swp
+
+# Docs site build output
+/site/

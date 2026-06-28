@@ -15,6 +15,13 @@ const gmsh = await initGmsh();
 // ... build geometry, mesh, read/write .msh via the API ...
 ```
 
+## Documentation
+
+Full documentation — getting started, guides (geometry, meshing, file I/O,
+browser, TypeScript), the complete generated API reference, and build/architecture
+notes — is published at **<https://loumalouomega.github.io/GMSH-JS/>** (built from
+[`docs/`](docs/) with MkDocs Material and deployed by CI).
+
 ## Status
 
 Early / pre-release (`0.x`). Built from the pinned Gmsh submodule (version 5.0.0
