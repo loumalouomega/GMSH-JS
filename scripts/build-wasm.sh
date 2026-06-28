@@ -41,6 +41,7 @@ if [ "$GMSH_ENABLE_OCC" = "ON" ]; then
   occ_link_libs=("${_tk[@]}" "${_tk[@]}")
 fi
 
+# TODO: Enable more flags for future developments
 emcmake cmake -S "$GMSH_SRC" -B "$GMSH_BUILD" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CXX_FLAGS="-fexceptions" \
