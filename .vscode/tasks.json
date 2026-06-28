@@ -1,0 +1,112 @@
+{
+  // VS Code tasks for gmsh-wasm. Run with: Terminal -> Run Task (Ctrl/Cmd+Shift+B
+  // runs the default build task; Run Test Task runs the default test task).
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup: install + activate emsdk",
+      "detail": "Install and activate the pinned Emscripten SDK into .emsdk/",
+      "type": "shell",
+      "command": "npm run setup",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: OpenCASCADE (WASM)",
+      "detail": "Compile OCCT to static WASM libraries (slow, ~once)",
+      "type": "shell",
+      "command": "npm run build:occt",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: gmsh WASM (OCC)",
+      "detail": "Generate bindings, build gmsh with OpenCASCADE, link + assemble dist/",
+      "type": "shell",
+      "command": "npm run build:wasm",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: gmsh WASM (no OCC)",
+      "detail": "Smaller/faster build without STEP/IGES (~12 MB)",
+      "type": "shell",
+      "command": "npm run build:wasm",
+      "options": { "env": { "GMSH_ENABLE_OCC": "OFF" } },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: full (OCCT + gmsh)",
+      "detail": "build:occt then build:wasm",
+      "type": "shell",
+      "command": "npm run build",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Generate: bindings (exports, descriptor, .d.ts)",
+      "detail": "Regenerate generated/ from the Gmsh API definition",
+      "type": "shell",
+      "command": "npm run gen",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Generate: docs API reference",
+      "detail": "Regenerate docs/api/reference.md from the descriptor",
+      "type": "shell",
+      "command": "npm run docs:api",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: Node",
+      "detail": "geo, occ, STEP round-trip, error path",
+      "type": "shell",
+      "command": "npm test",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: browser (headless Chromium)",
+      "detail": "Requires Playwright + Chromium (npm i -D playwright && npx playwright install chromium)",
+      "type": "shell",
+      "command": "npm run test:browser",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: all (Node + browser)",
+      "detail": "Run the Node suite then the browser test",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Test: Node", "Test: browser (headless Chromium)"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docs: build site",
+      "detail": "Regenerate API reference + mkdocs build",
+      "type": "shell",
+      "command": "npm run docs:build",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docs: serve (live preview)",
+      "detail": "Local docs server with live reload (http://127.0.0.1:8000)",
+      "type": "shell",
+      "command": "npm run docs:serve",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Clean: build artifacts",
+      "detail": "Remove build/, dist/, and site/ (keeps .emsdk and third_party)",
+      "type": "shell",
+      "command": "rm -rf build dist site",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
