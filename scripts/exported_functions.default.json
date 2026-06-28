@@ -1,0 +1,19 @@
+[
+  "_malloc",
+  "_free",
+  "_gmshMalloc",
+  "_gmshFree",
+  "_gmshInitialize",
+  "_gmshFinalize",
+  "_gmshClear",
+  "_gmshWrite",
+  "_gmshModelAdd",
+  "_gmshModelGeoAddPoint",
+  "_gmshModelGeoAddLine",
+  "_gmshModelGeoAddCurveLoop",
+  "_gmshModelGeoAddPlaneSurface",
+  "_gmshModelGeoSynchronize",
+  "_gmshModelMeshGenerate",
+  "_gmshModelMeshGetNodes",
+  "_gmshModelMeshGetElements"
+]
