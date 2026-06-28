@@ -14,7 +14,7 @@
       "import": "./dist/gmsh.mjs",
       "require": "./dist/gmsh.cjs"
     },
-    "./gmsh.wasm": "./dist/gmsh.wasm"
+    "./gmsh-core.wasm": "./dist/gmsh-core.wasm"
   },
   "files": [
     "dist/",

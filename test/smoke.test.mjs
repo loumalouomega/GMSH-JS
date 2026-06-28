@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import initGmsh from '../dist/gmsh.mjs';
+import initGmsh from '../dist/gmsh-core.mjs';
 import { makeHelpers } from './raw-helpers.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
