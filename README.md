@@ -42,6 +42,22 @@ gmsh.FS.writeFile('/in.step', stepBytes);     // Uint8Array
 const mesh = gmsh.FS.readFile('/out.msh');    // Uint8Array
 ```
 
+## Known issues
+
+- **3D Delaunay boundary recovery on re-imported CAD.** The default 3D meshing
+  algorithm (Delaunay) can fail boundary recovery — producing zero tetrahedra —
+  when meshing geometry that was round-tripped through STEP/IGES import in the
+  WASM build. Native OCC and `geo` solids mesh fine with the default. Workaround:
+  select the Frontal algorithm before generating:
+
+  ```js
+  gmsh.option.setNumber('Mesh.Algorithm3D', 4); // Frontal
+  gmsh.model.mesh.generate(3);
+  ```
+
+  This is specific to the Emscripten target (native builds recover the boundary
+  reliably) and is tracked for a future fix.
+
 ## Licensing — important
 
 Gmsh is distributed under the **GNU General Public License, version 2 or later**

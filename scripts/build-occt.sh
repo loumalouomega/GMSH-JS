@@ -52,7 +52,29 @@ emcmake cmake -S "$OCCT_SRC" -B "$OCCT_BUILD" \
   -DINSTALL_TEST_CASES=OFF
 
 # --- Build + install -------------------------------------------------------
-cmake --build "$OCCT_BUILD" --target install -- -j"$(nproc)"
+cmake --build "$OCCT_BUILD" -- -j"$(nproc)"
 
-echo ">> OCCT installed to $OCCT_PREFIX"
-ls "$OCCT_PREFIX"/lib/libTK* 2>/dev/null | head -n 20 || true
+# The install target also tries to install a developer codegen executable
+# (ExpToCasExe) whose emscripten .wasm companion isn't emitted -- harmless, and
+# we don't need it. Tolerate that, then verify the libraries/headers we DO need.
+cmake --install "$OCCT_BUILD" \
+  || echo ">> (install reported errors; verifying required artifacts instead)"
+
+required="TKDESTEP TKDEIGES TKXSBase TKOffset TKFeat TKFillet TKBool TKMesh \
+TKHLR TKBO TKPrim TKShHealing TKTopAlgo TKGeomAlgo TKBRep TKGeomBase TKG3d \
+TKG2d TKMath TKernel"
+missing=0
+for t in $required; do
+  if [ ! -f "$OCCT_PREFIX/lib/lib$t.a" ]; then
+    echo "MISSING required toolkit: lib$t.a" >&2; missing=1
+  fi
+done
+if [ ! -f "$OCCT_PREFIX/include/opencascade/Standard_Version.hxx" ]; then
+  echo "MISSING OCCT headers (Standard_Version.hxx)" >&2; missing=1
+fi
+if [ "$missing" != 0 ]; then
+  echo "OCCT install incomplete: required toolkits/headers missing" >&2
+  exit 1
+fi
+
+echo ">> OCCT installed to $OCCT_PREFIX ($(ls "$OCCT_PREFIX"/lib/libTK*.a | wc -l) toolkits)"
