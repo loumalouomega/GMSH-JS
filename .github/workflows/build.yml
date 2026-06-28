@@ -50,8 +50,16 @@ jobs:
           git diff --exit-code generated/ \
             || (echo "generated/ is stale — re-run scripts/gen-bindings.sh and commit" && exit 1)
 
-      - name: Test
+      - name: Install npm deps
+        run: npm install --no-audit --no-fund
+
+      - name: Test (Node)
         run: npm test
+
+      - name: Test (browser)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser
 
       - uses: actions/upload-artifact@v4
         with:
