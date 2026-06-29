@@ -1,0 +1,53 @@
+{
+  "name": "gmsh-wasm",
+  "version": "0.1.0",
+  "description": "Gmsh mesher C API compiled to WebAssembly (geometry + meshing, no GUI)",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://gmsh.info",
+  "type": "module",
+  "main": "./dist/gmsh.cjs",
+  "module": "./dist/gmsh.mjs",
+  "types": "./dist/gmsh.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/gmsh.d.ts",
+      "import": "./dist/gmsh.mjs",
+      "require": "./dist/gmsh.cjs"
+    },
+    "./gmsh-core.wasm": "./dist/gmsh-core.wasm"
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "setup": "scripts/setup-emsdk.sh",
+    "build:occt": "scripts/build-occt.sh",
+    "build:wasm": "scripts/build-wasm.sh",
+    "build": "scripts/build-occt.sh && scripts/build-wasm.sh",
+    "gen": "scripts/gen-bindings.sh",
+    "test": "node --test test/smoke.test.mjs test/api.test.mjs",
+    "test:browser": "node --test test/browser.test.mjs",
+    "docs:api": "python3 scripts/gen_docs_api.py",
+    "docs:build": "python3 scripts/gen_docs_api.py && mkdocs build",
+    "docs:serve": "python3 scripts/gen_docs_api.py && mkdocs serve"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  },
+  "keywords": [
+    "gmsh",
+    "mesh",
+    "meshing",
+    "fem",
+    "cad",
+    "wasm",
+    "webassembly",
+    "occ",
+    "opencascade"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

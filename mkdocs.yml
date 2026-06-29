@@ -1,0 +1,73 @@
+site_name: gmsh-wasm
+site_description: Gmsh mesh generator C API compiled to WebAssembly for JavaScript/TypeScript
+site_url: https://loumalouomega.github.io/GMSH-JS/
+repo_url: https://github.com/loumalouomega/GMSH-JS
+repo_name: loumalouomega/GMSH-JS
+docs_dir: docs
+copyright: Documentation licensed alongside gmsh-wasm under GPL-2.0-or-later.
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - navigation.tracking
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Guide:
+      - Concepts: guide/concepts.md
+      - Building geometry: guide/geometry.md
+      - Meshing: guide/meshing.md
+      - File I/O: guide/file-io.md
+      - Browser usage: guide/browser.md
+      - TypeScript: guide/typescript.md
+  - API:
+      - Overview: api/overview.md
+      - Marshalling: api/marshalling.md
+      - Reference: api/reference.md
+  - Building from source: building.md
+  - Architecture: architecture.md
+  - Contributing: contributing.md
+  - Troubleshooting: troubleshooting.md
+  - Licensing: licensing.md

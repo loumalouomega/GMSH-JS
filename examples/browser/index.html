@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>gmsh-wasm — browser example</title>
+</head>
+<body>
+  <h1>gmsh-wasm in the browser</h1>
+  <pre id="result">running…</pre>
+
+  <script type="module">
+    // Import the published ESM entry directly; the .wasm is fetched as an asset.
+    import initialize from '../../dist/gmsh.mjs';
+
+    const out = document.getElementById('result');
+    try {
+      const gmsh = await initialize();
+      gmsh.initialize();
+      gmsh.model.add('square');
+
+      const lc = 0.1;
+      const p = [
+        gmsh.model.geo.addPoint(0, 0, 0, lc),
+        gmsh.model.geo.addPoint(1, 0, 0, lc),
+        gmsh.model.geo.addPoint(1, 1, 0, lc),
+        gmsh.model.geo.addPoint(0, 1, 0, lc),
+      ];
+      const l = [
+        gmsh.model.geo.addLine(p[0], p[1]),
+        gmsh.model.geo.addLine(p[1], p[2]),
+        gmsh.model.geo.addLine(p[2], p[3]),
+        gmsh.model.geo.addLine(p[3], p[0]),
+      ];
+      gmsh.model.geo.addPlaneSurface([gmsh.model.geo.addCurveLoop(l)]);
+      gmsh.model.geo.synchronize();
+      gmsh.model.mesh.generate(2);
+
+      const nodes = gmsh.model.mesh.getNodes().nodeTags.length;
+      gmsh.finalize();
+
+      // Signal success to both humans and the headless test harness.
+      out.textContent = `OK: meshed unit square — ${nodes} nodes`;
+      out.dataset.nodes = String(nodes);
+      out.dataset.status = 'ok';
+    } catch (err) {
+      out.textContent = 'ERROR: ' + (err && err.message || err);
+      out.dataset.status = 'error';
+    }
+  </script>
+</body>
+</html>

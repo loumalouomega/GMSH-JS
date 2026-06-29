@@ -1,0 +1,107 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Pinned Emscripten SDK (keyed on the pinned version in scripts/env.sh).
+      - name: Cache emsdk
+        uses: actions/cache@v4
+        with:
+          path: .emsdk
+          key: emsdk-${{ runner.os }}-${{ hashFiles('scripts/env.sh', 'scripts/setup-emsdk.sh') }}
+
+      - name: Setup emsdk
+        run: bash scripts/setup-emsdk.sh
+
+      # OCCT WASM build is slow and changes rarely: cache the install prefix.
+      - name: Cache OCCT (WASM install)
+        id: occt-cache
+        uses: actions/cache@v4
+        with:
+          path: build/occt-install
+          key: occt-${{ runner.os }}-${{ hashFiles('scripts/env.sh', 'scripts/build-occt.sh') }}
+
+      - name: Build OCCT (WASM)
+        if: steps.occt-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-occt.sh
+
+      - name: Build gmsh WASM + assemble dist
+        run: bash scripts/build-wasm.sh
+
+      - name: Verify generated bindings are in sync
+        run: |
+          bash scripts/gen-bindings.sh
+          git diff --exit-code generated/ \
+            || (echo "generated/ is stale — re-run scripts/gen-bindings.sh and commit" && exit 1)
+
+      - name: Install npm deps
+        run: npm install --no-audit --no-fund
+
+      - name: Test (Node)
+        run: npm test
+
+      - name: Test (browser)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build-test
+    # Only on a pushed version tag (e.g. v0.1.0).
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance (build attestation)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20' # npm >= 10, needed for --provenance
+          registry-url: 'https://registry.npmjs.org'
+
+      # Reuse the dist/ built and tested by the build-test job (build once).
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Verify the git tag matches package.json version
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "tag=$TAG_VERSION package.json=$PKG_VERSION"
+          test "$PKG_VERSION" = "$TAG_VERSION" \
+            || { echo "::error::tag v$TAG_VERSION does not match package.json version $PKG_VERSION"; exit 1; }
+
+      - name: Sanity-check the artifact
+        run: |
+          test -f dist/gmsh-core.wasm || { echo "::error::dist/gmsh-core.wasm missing"; exit 1; }
+          test -f dist/gmsh.mjs && test -f dist/gmsh.cjs && test -f dist/gmsh.d.ts
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

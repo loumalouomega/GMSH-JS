@@ -1,0 +1,2 @@
+# Documentation site (MkDocs + Material). Used by .github/workflows/docs.yml.
+mkdocs-material~=9.5
