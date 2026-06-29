@@ -16,3 +16,6 @@ npm-debug.log*
 
 # Docs site build output
 /site/
+
+# Generated files
+node_modules
