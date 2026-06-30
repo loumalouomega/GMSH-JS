@@ -6,6 +6,12 @@ on:
     tags: ['v*']
   pull_request:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Publish step: dry-run only (verifies NPM_TOKEN + package contents, does not publish)'
+        type: boolean
+        default: true
 
 jobs:
   build-test:
@@ -68,8 +74,9 @@ jobs:
 
   publish:
     needs: build-test
-    # Only on a pushed version tag (e.g. v0.1.0).
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Real publish on a pushed version tag (e.g. v0.1.0); manual runs default
+    # to a dry-run so NPM_TOKEN + package contents can be verified on demand.
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,7 +95,15 @@ jobs:
           name: dist
           path: dist/
 
+      - name: Verify NPM_TOKEN authenticates
+        run: |
+          npm whoami --registry=https://registry.npmjs.org \
+            || { echo "::error::npm whoami failed -- NPM_TOKEN secret is missing, expired, or lacks publish rights for this account."; exit 1; }
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Verify the git tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           PKG_VERSION="$(node -p "require('./package.json').version")"
           TAG_VERSION="${GITHUB_REF_NAME#v}"
@@ -101,7 +116,16 @@ jobs:
           test -f dist/gmsh-core.wasm || { echo "::error::dist/gmsh-core.wasm missing"; exit 1; }
           test -f dist/gmsh.mjs && test -f dist/gmsh.cjs && test -f dist/gmsh.d.ts
 
+      # Real publish only on a version tag. A manual (workflow_dispatch) run
+      # defaults to --dry-run, which exercises auth + packing without
+      # publishing -- use it to confirm NPM_TOKEN works after rotating it.
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "::notice::Dry run -- not publishing. Re-run with dry_run=false, or push a vX.Y.Z tag, to publish for real."
+            npm publish --access public --dry-run
+          else
+            npm publish --provenance --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

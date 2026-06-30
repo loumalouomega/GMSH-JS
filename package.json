@@ -3,7 +3,14 @@
   "version": "0.1.0",
   "description": "Gmsh mesher C API compiled to WebAssembly (geometry + meshing, no GUI)",
   "license": "GPL-2.0-or-later",
-  "homepage": "https://gmsh.info",
+  "homepage": "https://loumalouomega.github.io/GMSH-JS/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loumalouomega/GMSH-JS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/loumalouomega/GMSH-JS/issues"
+  },
   "type": "module",
   "main": "./dist/gmsh.cjs",
   "module": "./dist/gmsh.mjs",
