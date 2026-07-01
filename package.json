@@ -1,6 +1,6 @@
 {
   "name": "@loumalouomega/gmsh-wasm",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Gmsh mesher C API compiled to WebAssembly (geometry + meshing, no GUI)",
   "license": "GPL-2.0-or-later",
   "homepage": "https://loumalouomega.github.io/GMSH-JS/",
