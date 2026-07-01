@@ -31,6 +31,7 @@ can remove the GPL obligations for the Gmsh portion. See
 
 ## Attribution
 
-This is an **independent packaging effort** and is not affiliated with or
-endorsed by the Gmsh or OpenCASCADE authors. See the repository `LICENSE` file
-and the bundled `gmsh/LICENSE.txt` for the full texts.
+This packaging effort is maintained by Vicente Mataix Ferrándiz and contributors,
+and is **independent** — not affiliated with or endorsed by the Gmsh or
+OpenCASCADE authors. See the repository `LICENSE` file and the bundled
+`gmsh/LICENSE.txt` for the full texts.
