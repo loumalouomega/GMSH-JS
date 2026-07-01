@@ -1,7 +1,7 @@
 gmsh-wasm
 =========
 
-Copyright (C) 2026 gmsh-wasm contributors.
+Copyright (C) 2026 Vicente Mataix Ferrándiz and gmsh-wasm contributors.
 
 This package compiles the Gmsh mesh generator (and OpenCASCADE Technology) to
 WebAssembly and statically links them into the distributed `.wasm`. Because Gmsh
