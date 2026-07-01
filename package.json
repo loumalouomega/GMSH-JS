@@ -3,6 +3,7 @@
   "version": "0.1.1",
   "description": "Gmsh mesher C API compiled to WebAssembly (geometry + meshing, no GUI)",
   "license": "GPL-2.0-or-later",
+  "author": "Vicente Mataix Ferrándiz",
   "homepage": "https://loumalouomega.github.io/GMSH-JS/",
   "repository": {
     "type": "git",
