@@ -9,7 +9,7 @@ Runs in **Node** and the **browser** (single-threaded — no `SharedArrayBuffer`
 requirement), loaded asynchronously.
 
 ```js
-import initialize from 'gmsh-wasm';
+import initialize from '@loumalouomega/gmsh-wasm';
 
 const gmsh = await initialize();
 gmsh.initialize();

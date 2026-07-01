@@ -4,7 +4,7 @@ The package ships a complete `gmsh.d.ts` generated from the Gmsh API
 definition, so every function, parameter, and return shape is typed.
 
 ```ts
-import initialize from 'gmsh-wasm';
+import initialize from '@loumalouomega/gmsh-wasm';
 
 const gmsh = await initialize();
 gmsh.initialize();

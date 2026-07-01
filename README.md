@@ -2,8 +2,8 @@
 
 [![build](https://github.com/loumalouomega/GMSH-JS/actions/workflows/build.yml/badge.svg)](https://github.com/loumalouomega/GMSH-JS/actions/workflows/build.yml)
 [![docs](https://github.com/loumalouomega/GMSH-JS/actions/workflows/docs.yml/badge.svg)](https://loumalouomega.github.io/GMSH-JS/)
-[![npm version](https://img.shields.io/npm/v/gmsh-wasm.svg?logo=npm&color=cb3837)](https://www.npmjs.com/package/gmsh-wasm)
-[![npm downloads](https://img.shields.io/npm/dm/gmsh-wasm.svg)](https://www.npmjs.com/package/gmsh-wasm)
+[![npm version](https://img.shields.io/npm/v/%40loumalouomega%2Fgmsh-wasm.svg?logo=npm&color=cb3837)](https://www.npmjs.com/package/@loumalouomega/gmsh-wasm)
+[![npm downloads](https://img.shields.io/npm/dm/%40loumalouomega%2Fgmsh-wasm.svg)](https://www.npmjs.com/package/@loumalouomega/gmsh-wasm)
 [![types](https://img.shields.io/badge/types-included-3178c6?logo=typescript&logoColor=white)](https://loumalouomega.github.io/GMSH-JS/guide/typescript/)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-654ff0?logo=webassembly&logoColor=white)](https://webassembly.org)
@@ -27,7 +27,7 @@ STEP/IGES/BREP import) and the full mesh module; **no GUI / visualization**.
 ## Install
 
 ```bash
-npm install gmsh-wasm
+npm install @loumalouomega/gmsh-wasm
 ```
 
 No build step for consumers — the package ships a prebuilt `.wasm`, dual
@@ -36,7 +36,7 @@ ESM/CJS entries, and TypeScript types.
 ## Quick start
 
 ```js
-import initialize from 'gmsh-wasm';
+import initialize from '@loumalouomega/gmsh-wasm';
 
 const gmsh = await initialize(); // load the WASM module
 gmsh.initialize();               // start the Gmsh library
@@ -68,7 +68,7 @@ const msh = gmsh.FS.readFile('/out.msh', { encoding: 'utf8' });
 gmsh.finalize();
 ```
 
-CommonJS: `const initialize = require('gmsh-wasm');` then the same calls.
+CommonJS: `const initialize = require('@loumalouomega/gmsh-wasm');` then the same calls.
 
 ### Two `initialize` steps
 

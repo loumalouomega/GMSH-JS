@@ -3,7 +3,7 @@
 ## Install
 
 ```bash
-npm install gmsh-wasm
+npm install @loumalouomega/gmsh-wasm
 ```
 
 The package ships a prebuilt `.wasm` plus dual ESM/CJS entry points and
@@ -18,7 +18,7 @@ needed if you build the package from source ([Building](building.md)).
 ## Your first mesh (Node, ESM)
 
 ```js
-import initialize from 'gmsh-wasm';
+import initialize from '@loumalouomega/gmsh-wasm';
 
 const gmsh = await initialize(); // instantiate the WASM module
 gmsh.initialize();               // initialise the Gmsh library
@@ -65,7 +65,7 @@ Pair it with `gmsh.finalize()` when done.
 ## CommonJS
 
 ```js
-const initialize = require('gmsh-wasm');
+const initialize = require('@loumalouomega/gmsh-wasm');
 
 (async () => {
   const gmsh = await initialize();
@@ -79,7 +79,7 @@ const initialize = require('gmsh-wasm');
 
 ```html
 <script type="module">
-  import initialize from 'https://unpkg.com/gmsh-wasm/dist/gmsh.mjs';
+  import initialize from 'https://unpkg.com/@loumalouomega/gmsh-wasm/dist/gmsh.mjs';
   const gmsh = await initialize();
   gmsh.initialize();
   // ... build + mesh ...

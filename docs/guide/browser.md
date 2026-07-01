@@ -7,7 +7,7 @@ separate asset (not inlined).
 ## With a bundler (Vite, webpack, Rollup, esbuild)
 
 ```js
-import initialize from 'gmsh-wasm';
+import initialize from '@loumalouomega/gmsh-wasm';
 
 const gmsh = await initialize();
 gmsh.initialize();
@@ -19,7 +19,7 @@ references it relative to the module URL. If your bundler needs an explicit
 asset URL, the `.wasm` is exported as a subpath:
 
 ```js
-import wasmUrl from 'gmsh-wasm/gmsh-core.wasm?url'; // Vite
+import wasmUrl from '@loumalouomega/gmsh-wasm/gmsh-core.wasm?url'; // Vite
 const gmsh = await initialize({ locateFile: () => wasmUrl });
 ```
 
@@ -31,7 +31,7 @@ works:
 
 ```html
 <script type="module">
-  import initialize from '/node_modules/gmsh-wasm/dist/gmsh.mjs';
+  import initialize from '/node_modules/@loumalouomega/gmsh-wasm/dist/gmsh.mjs';
   const gmsh = await initialize();
   gmsh.initialize();
   // ...
