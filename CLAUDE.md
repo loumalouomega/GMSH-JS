@@ -3,6 +3,9 @@
 Guidance for working in this repository with Claude Code. Keep it short; record
 only what isn't obvious from the code.
 
+Every time you change code in this repo, check whether `docs/`, `README.md`,
+and this file need updating too — and update them if they do.
+
 ## What this is
 
 `gmsh-wasm` compiles the **Gmsh** mesher's flat C API (`gmsh/api/gmshc.h`) to
