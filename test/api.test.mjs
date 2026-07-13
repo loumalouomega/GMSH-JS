@@ -109,6 +109,37 @@ test('occ kernel: STEP write -> import round-trip + mesh', async (t) => {
   console.log(`  ✓ STEP round-trip: ${surf.elementTags[triIdx].length} tris, ${vol.elementTags[tetIdx].length} tets (Frontal)`);
 });
 
+test('threads: OpenMP engages pthread pool workers', async () => {
+  const gmsh = await initialize();
+  gmsh.initialize();
+  gmsh.option.setNumber('General.NumThreads', 2);
+  assert.equal(gmsh.option.getNumber('General.NumThreads').value, 2);
+
+  gmsh.model.add('threaded-square');
+  const lc = 0.05;
+  const p = [
+    gmsh.model.geo.addPoint(0, 0, 0, lc),
+    gmsh.model.geo.addPoint(1, 0, 0, lc),
+    gmsh.model.geo.addPoint(1, 1, 0, lc),
+    gmsh.model.geo.addPoint(0, 1, 0, lc),
+  ];
+  const l = [
+    gmsh.model.geo.addLine(p[0], p[1]),
+    gmsh.model.geo.addLine(p[1], p[2]),
+    gmsh.model.geo.addLine(p[2], p[3]),
+    gmsh.model.geo.addLine(p[3], p[0]),
+  ];
+  gmsh.model.geo.addPlaneSurface([gmsh.model.geo.addCurveLoop(l)]);
+  gmsh.model.geo.synchronize();
+  gmsh.model.mesh.generate(2);
+
+  // libomp parks its team on pool pthreads after the first parallel region.
+  const workers = gmsh.module.PThread.runningWorkers.length;
+  assert.ok(workers >= 1, `expected OpenMP to occupy pool workers, got ${workers}`);
+  gmsh.finalize();
+  console.log(`  ✓ threads: ${workers} pool worker(s) engaged`);
+});
+
 test('error path: surfaces over a missing curve loop throws a JS Error', async () => {
   const gmsh = await initialize();
   gmsh.initialize();

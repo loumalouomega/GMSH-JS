@@ -14,8 +14,10 @@ compiled to **WebAssembly** and exposed to JavaScript/TypeScript through its fla
 `extern "C"` API. Geometry kernels (built-in `geo` + OpenCASCADE `occ`, incl.
 STEP/IGES/BREP import) and the full mesh module; **no GUI / visualization**.
 
-- ⚡ Runs in **Node** and the **browser** (single-threaded — no `SharedArrayBuffer`
-  / COOP-COEP requirement)
+- ⚡ Runs in **Node** and the **browser** — **multithreaded** (OpenMP via
+  pthreads). Browser pages must be cross-origin isolated: serve with
+  `Cross-Origin-Opener-Policy: same-origin` +
+  `Cross-Origin-Embedder-Policy: require-corp`
 - 🧩 **Typed, ergonomic API** — hides the C `ierr` out-parameter and all manual
   memory management
 - 🤖 **341 functions generated** from Gmsh's own API definition, so the bindings
@@ -76,6 +78,20 @@ CommonJS: `const initialize = require('@loumalouomega/gmsh-wasm');` then the sam
 library (mirrors `gmsh::initialize()` in the C++/Python APIs). Pair with
 `gmsh.finalize()`.
 
+### Threads
+
+The build is OpenMP-enabled (pthreads). Gmsh defaults to 1 thread; opt into
+parallelism per session:
+
+```js
+gmsh.option.setNumber('General.NumThreads', 0); // 0 = all cores (or set an explicit count)
+```
+
+Node needs no special flags. In the **browser**, threads require
+`SharedArrayBuffer`, so the page must be served with the COOP/COEP headers
+above — see the
+[browser guide](https://loumalouomega.github.io/GMSH-JS/guide/browser/).
+
 ## File I/O (MEMFS)
 
 Gmsh reads/writes files through Emscripten's in-memory filesystem. Stage inputs
@@ -112,12 +128,13 @@ Requires `git`, `cmake`, `python3`, `node` ≥ 18, and several GB of disk.
 ```bash
 git submodule update --init --recursive
 npm run setup        # install + activate the pinned Emscripten SDK -> .emsdk/
+npm run build:libomp # build LLVM's OpenMP runtime (libomp) to wasm32
 npm run build:occt   # build OpenCASCADE to static WASM libs (slow, ~once)
 npm run build:wasm   # gen bindings, build gmsh, link + assemble dist/
 npm test
 ```
 
-`npm run build` runs `build:occt` then `build:wasm`. For a smaller artifact
+`npm run build` runs `build:libomp`, `build:occt`, then `build:wasm`. For a smaller artifact
 without STEP/IGES (≈12 MB vs ≈45 MB): `GMSH_ENABLE_OCC=OFF npm run build:wasm`.
 
 ## npm scripts
@@ -125,9 +142,10 @@ without STEP/IGES (≈12 MB vs ≈45 MB): `GMSH_ENABLE_OCC=OFF npm run build:was
 | Script | Does |
 |--------|------|
 | `npm run setup` | install + activate pinned emsdk |
+| `npm run build:libomp` | build LLVM's OpenMP runtime (libomp) → wasm32 static lib |
 | `npm run build:occt` | build OpenCASCADE → static WASM libs |
 | `npm run build:wasm` | generate bindings, build gmsh, assemble `dist/` |
-| `npm run build` | `build:occt` + `build:wasm` |
+| `npm run build` | `build:libomp` + `build:occt` + `build:wasm` |
 | `npm run gen` | regenerate bindings (`generated/`) from the Gmsh API definition |
 | `npm test` | Node test suite (geo, occ, STEP round-trip, error path) |
 | `npm run test:browser` | headless-Chromium test (needs Playwright + Chromium) |

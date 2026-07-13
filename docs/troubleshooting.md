@@ -35,6 +35,21 @@ wrapper rethrew it as a JS `Error`. The message is the Gmsh message (e.g.
 `gmsh.initialize()` before model operations, and `gmsh.finalize()` when done.
 See [Getting started](getting-started.md#two-initialize-calls).
 
+## Browser: `SharedArrayBuffer is not defined` / hangs at `initialize()`
+
+This is a threaded (pthreads) build: browsers only expose `SharedArrayBuffer`
+on **cross-origin-isolated** pages. The server must send both headers on the
+document:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+Verify with `crossOriginIsolated === true` in the console. See
+[Browser usage](guide/browser.md#threads-headers) for server snippets and the
+`coi-serviceworker` workaround for header-less static hosts.
+
 ## Browser: `.wasm` fails to load / wrong MIME
 
 The server must serve the `.wasm` with `Content-Type: application/wasm` for

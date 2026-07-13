@@ -26,7 +26,13 @@ function startServer() {
       const filePath = normalize(join(ROOT, urlPath));
       if (!filePath.startsWith(ROOT)) { res.writeHead(403).end(); return; }
       const body = await readFile(filePath);
-      res.writeHead(200, { 'content-type': MIME[extname(filePath)] || 'application/octet-stream' });
+      res.writeHead(200, {
+        'content-type': MIME[extname(filePath)] || 'application/octet-stream',
+        // The threaded (pthreads) build needs SharedArrayBuffer, which browsers
+        // only expose on cross-origin-isolated pages.
+        'cross-origin-opener-policy': 'same-origin',
+        'cross-origin-embedder-policy': 'require-corp',
+      });
       res.end(body);
     } catch {
       res.writeHead(404).end('not found');
@@ -54,6 +60,9 @@ test('browser: ESM build meshes a square in headless Chromium', async (t) => {
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(`http://127.0.0.1:${port}/examples/browser/index.html`);
+
+    assert.equal(await page.evaluate(() => globalThis.crossOriginIsolated), true,
+      'server must send COOP/COEP headers for the threaded build');
 
     const el = await page.waitForSelector('#result[data-status]', { timeout: 30000 });
     const status = await el.getAttribute('data-status');
