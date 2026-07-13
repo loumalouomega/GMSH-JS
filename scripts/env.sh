@@ -12,6 +12,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EMSDK_VERSION="${EMSDK_VERSION:-3.1.74}"
 # OpenCASCADE technology release (modeling + data exchange only).
 OCCT_VERSION="${OCCT_VERSION:-7.8.1}"
+# LLVM release whose OpenMP runtime (libomp) we compile to wasm32. Emscripten
+# ships no libomp/omp.h; wasm32 support is upstream since LLVM 17 (D142593).
+# The __kmpc_* ABI clang emits is stable, so this need not match emsdk's clang.
+LLVM_OPENMP_VERSION="${LLVM_OPENMP_VERSION:-19.1.7}"
 
 # --- Locations -------------------------------------------------------------
 EMSDK_DIR="${EMSDK_DIR:-$ROOT/.emsdk}"
@@ -21,10 +25,14 @@ BUILD_DIR="$ROOT/build"
 OCCT_BUILD="$BUILD_DIR/occt"
 OCCT_PREFIX="$BUILD_DIR/occt-install"   # WASM OCCT install prefix
 GMSH_BUILD="$BUILD_DIR/gmsh"
+LIBOMP_SRC="$THIRD_PARTY/llvm-openmp"
+LIBOMP_BUILD="$BUILD_DIR/libomp"
+LIBOMP_PREFIX="$BUILD_DIR/libomp-install"  # WASM libomp install prefix
 DIST="$ROOT/dist"
 
-export ROOT EMSDK_VERSION OCCT_VERSION EMSDK_DIR THIRD_PARTY OCCT_SRC \
-       BUILD_DIR OCCT_BUILD OCCT_PREFIX GMSH_BUILD DIST
+export ROOT EMSDK_VERSION OCCT_VERSION LLVM_OPENMP_VERSION EMSDK_DIR \
+       THIRD_PARTY OCCT_SRC BUILD_DIR OCCT_BUILD OCCT_PREFIX GMSH_BUILD \
+       LIBOMP_SRC LIBOMP_BUILD LIBOMP_PREFIX DIST
 
 # Activate emsdk if present (emcc/emcmake on PATH, EMSDK set).
 activate_emsdk() {

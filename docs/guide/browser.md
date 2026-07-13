@@ -1,8 +1,13 @@
 # Browser usage
 
 The package targets the browser as a first-class environment: the ESM build is
-emitted with `-sENVIRONMENT=node,web` and `EXPORT_ES6`, and the `.wasm` is a
-separate asset (not inlined).
+emitted with `-sENVIRONMENT=node,web,worker` and `EXPORT_ES6`, and the `.wasm`
+is a separate asset (not inlined).
+
+> **Requires cross-origin isolation.** This is a threaded (OpenMP/pthreads)
+> build: it needs `SharedArrayBuffer`, which browsers only expose on pages
+> served with the COOP/COEP headers — see
+> [Threads / headers](#threads-headers) below.
 
 ## With a bundler (Vite, webpack, Rollup, esbuild)
 
@@ -56,10 +61,53 @@ const gmsh = await initialize({
 
 ## Threads / headers
 
-This is a **single-threaded** build, so it does **not** require
-`SharedArrayBuffer` or the COOP/COEP headers
-(`Cross-Origin-Opener-Policy: same-origin` +
-`Cross-Origin-Embedder-Policy: require-corp`). It runs on any static host.
+This is a **multithreaded** build (OpenMP over pthreads). It requires
+`SharedArrayBuffer`, which browsers only expose on **cross-origin-isolated**
+pages: the server must send both headers on the document (and its scripts):
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+Verify in the page: `crossOriginIsolated === true`. Without these headers the
+module fails to instantiate (typically `SharedArrayBuffer is not defined`).
+
+Configuration snippets:
+
+```nginx
+# nginx
+add_header Cross-Origin-Opener-Policy same-origin;
+add_header Cross-Origin-Embedder-Policy require-corp;
+```
+
+```js
+// vite.config.js
+export default {
+  server: { headers: {
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+  } },
+};
+```
+
+Consequences to be aware of:
+
+- The package no longer runs on static hosts that can't set headers. For
+  GitHub Pages and similar, the
+  [`coi-serviceworker`](https://github.com/gzuidhof/coi-serviceworker)
+  workaround can inject the headers client-side.
+- `COEP: require-corp` restricts loading cross-origin subresources (images,
+  scripts) to those served with CORS/CORP headers.
+- Worker threads are spawned from the module's own URL
+  (`new Worker(new URL(import.meta.url), { type: 'module' })`); Vite and
+  webpack 5 handle this pattern natively.
+
+Thread count is a Gmsh option (default 1 = serial):
+
+```js
+gmsh.option.setNumber('General.NumThreads', 0); // 0 = all cores
+```
 
 ## Memory
 

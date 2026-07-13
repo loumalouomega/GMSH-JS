@@ -35,6 +35,18 @@ jobs:
       - name: Setup emsdk
         run: bash scripts/setup-emsdk.sh
 
+      # libomp (LLVM OpenMP runtime for wasm32) changes rarely: cache the install.
+      - name: Cache libomp (WASM install)
+        id: libomp-cache
+        uses: actions/cache@v4
+        with:
+          path: build/libomp-install
+          key: libomp-${{ runner.os }}-${{ hashFiles('scripts/env.sh', 'scripts/build-libomp.sh') }}
+
+      - name: Build libomp (WASM)
+        if: steps.libomp-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-libomp.sh
+
       # OCCT WASM build is slow and changes rarely: cache the install prefix.
       - name: Cache OCCT (WASM install)
         id: occt-cache

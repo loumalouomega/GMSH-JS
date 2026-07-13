@@ -11,7 +11,8 @@ and this file need updating too — and update them if they do.
 `gmsh-wasm` compiles the **Gmsh** mesher's flat C API (`gmsh/api/gmshc.h`) to
 WebAssembly with Emscripten and wraps it in a typed JS/TS API. Geometry (`geo` +
 OpenCASCADE `occ`) and meshing only — **no GUI** (`fltk`/`graphics`/`view` are
-filtered out everywhere). Targets Node and the browser; single-threaded.
+filtered out everywhere). Targets Node and the browser; multithreaded via
+OpenMP/pthreads (browsers need COOP/COEP headers for `SharedArrayBuffer`).
 
 ## Architecture (how a change flows)
 
@@ -20,6 +21,7 @@ gmsh/api/gen.py (Gmsh's own API definition)
   └─ scripts/gen_js.py  → generated/exported_functions.json  (emcc -sEXPORTED_FUNCTIONS)
                           generated/gmsh-api.json            (runtime descriptor)
                           generated/gmsh.d.ts                (TypeScript types)
+  scripts/build-libomp.sh → build/libomp-install/ (static libomp.a, LLVM OpenMP runtime)
   scripts/build-occt.sh → build/occt-install/ (static libTK*.a)
   scripts/build-wasm.sh → emcmake gmsh → libgmsh.a → emcc link → dist/gmsh-core.{mjs,cjs,wasm}
   scripts/assemble.mjs  → dist/gmsh.{mjs,cjs} (typed wrapper) + descriptor + runtime + .d.ts
@@ -35,6 +37,7 @@ gmsh/api/gen.py (Gmsh's own API definition)
 | Task | Command |
 |------|---------|
 | Install/activate emsdk (pinned) | `npm run setup` |
+| Build libomp (OpenMP runtime) → WASM | `npm run build:libomp` |
 | Build OpenCASCADE → WASM libs | `npm run build:occt` |
 | Build gmsh + assemble dist | `npm run build:wasm` (`GMSH_ENABLE_OCC=OFF` for no-OCC) |
 | Regenerate bindings | `npm run gen` |
@@ -43,7 +46,8 @@ gmsh/api/gen.py (Gmsh's own API definition)
 | Docs build | `npm run docs:build` |
 
 emsdk is **not on PATH**; the scripts activate it via `scripts/env.sh`
-(`activate_emsdk`). Pinned versions (emsdk, OCCT) live in `scripts/env.sh`.
+(`activate_emsdk`). Pinned versions (emsdk, OCCT, LLVM openmp) live in
+`scripts/env.sh`.
 
 ## Repo conventions
 
@@ -65,6 +69,17 @@ emsdk is **not on PATH**; the scripts activate it via `scripts/env.sh`
 - **OCCT install is tolerant by design:** the `ExpToCasExe` dev tool has no
   `.wasm`, so `build-occt.sh` ignores that install error and instead verifies the
   required `libTK*.a` + headers exist.
+- **OpenMP under Emscripten needs our own libomp.** emcc ships no OpenMP
+  runtime/`omp.h`, so `find_package(OpenMP)` cannot autodetect and gmsh would
+  *silently* fall back to serial. `build-wasm.sh` presets the `OpenMP_*` hint
+  variables (pointing at `build/libomp-install/`) and greps ` OpenMP ` out of
+  `GMSH_CONFIG_OPTIONS` in the generated `GmshConfig.h` after configure to
+  refuse a serial build (gmsh has no `#define HAVE_OPENMP`; sources test the
+  compiler's `_OPENMP`).
+- **Every object in the pthread link must be `-pthread`-compiled** (gmsh, HXT,
+  OCCT, libomp), or wasm-ld fails with `--shared-memory is disallowed by ...`.
+  Keep the `-pthread` flags in build-libomp.sh / build-occt.sh / build-wasm.sh
+  in sync, and clean-rebuild OCCT after toggling them.
 - **3D Delaunay on re-imported CAD fails boundary recovery** in WASM (zero tets).
   Use `gmsh.option.setNumber('Mesh.Algorithm3D', 4)` (Frontal). Native geometry
   is fine. Tests use the Frontal path for the STEP round-trip.
@@ -76,6 +91,7 @@ emsdk is **not on PATH**; the scripts activate it via `scripts/env.sh`
 
 ## Decisions (fixed for v1)
 
-Eigen (not BLAS/LAPACK) · `-fexceptions` · single-threaded · MEMFS for I/O ·
+Eigen (not BLAS/LAPACK) · `-fexceptions` · OpenMP + pthreads (libomp built from
+LLVM sources by `scripts/build-libomp.sh`) · MEMFS for I/O ·
 `MODULARIZE`+`EXPORT_ES6` · OCC enabled. Rationale is in `docs/architecture.md`
 and `docs/building.md`.

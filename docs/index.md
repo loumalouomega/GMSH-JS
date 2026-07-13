@@ -5,8 +5,9 @@
 flat `extern "C"` API. Geometry kernels (built-in `geo` + OpenCASCADE `occ`) and
 the mesh module, with full mesh I/O. **No GUI / visualization.**
 
-Runs in **Node** and the **browser** (single-threaded — no `SharedArrayBuffer`
-requirement), loaded asynchronously.
+Runs in **Node** and the **browser**, multithreaded (OpenMP over pthreads),
+loaded asynchronously. Browser pages must be cross-origin isolated (COOP/COEP
+headers) — see [Browser usage](guide/browser.md#threads-headers).
 
 ```js
 import initialize from '@loumalouomega/gmsh-wasm';

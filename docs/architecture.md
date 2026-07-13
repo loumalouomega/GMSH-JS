@@ -49,11 +49,17 @@ the complex `T***` output handling in one tested implementation. See
 ## The native build
 
 - **Gmsh** is compiled to a static `libgmsh.a` with `emcmake cmake` — GUI off,
-  Eigen for linear algebra, single-threaded, C++17.
+  Eigen for linear algebra, OpenMP-threaded (pthreads), C++17.
+- **libomp** (LLVM's OpenMP runtime) is built separately to a static wasm32
+  library by `scripts/build-libomp.sh` — Emscripten ships no OpenMP runtime, so
+  gmsh's `-fopenmp` code links against this.
 - **OpenCASCADE** is built separately to static WASM libraries (modeling +
   data-exchange toolkits only; no visualization). Gmsh links against them.
-- `emcc` links `libgmsh.a` (+ the OCCT `libTK*.a`) into a `MODULARIZE`d reactor
-  module, emitted as both ESM and CJS sharing one `gmsh-core.wasm`.
+  All of gmsh, OCCT and libomp are compiled with `-pthread` — `wasm-ld` rejects
+  mixing non-atomics objects into a shared-memory link.
+- `emcc` links `libgmsh.a` (+ the OCCT `libTK*.a` + `libomp.a`) with `-pthread`
+  into a `MODULARIZE`d reactor module, emitted as both ESM and CJS sharing one
+  `gmsh-core.wasm`.
 
 ## Assembly (`scripts/assemble.mjs`)
 

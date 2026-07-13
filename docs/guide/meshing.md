@@ -101,6 +101,23 @@ gmsh.model.mesh.generate(2);
 
 ## Threads
 
-This build is **single-threaded** for portability (no `SharedArrayBuffer` /
-COOP-COEP requirement). Multithreaded algorithms (e.g. parallel HXT) run
-serially. A threaded build is a possible future opt-in.
+This build is **OpenMP-enabled** (pthreads). Gmsh still defaults to 1 thread;
+opt in per session:
+
+```js
+gmsh.option.setNumber('General.NumThreads', 0); // 0 = all cores, or an explicit count
+```
+
+Per-stage limits are available via `Mesh.MaxNumThreads1D`, `Mesh.MaxNumThreads2D`
+and `Mesh.MaxNumThreads3D`. The `OMP_NUM_THREADS` environment variable does not
+exist in the browser (and is not read by the WASM module) — use the options.
+
+In the browser, threads require a cross-origin-isolated page (COOP/COEP
+headers) — see [Browser usage](browser.md#threads-headers). Avoid setting the
+thread count above `navigator.hardwareConcurrency`: the pthread worker pool is
+sized to the core count, and oversubscribing it can deadlock the main thread.
+
+The OpenMP-parallel 3D mesher is HXT (`Mesh.Algorithm3D = 10`). For CAD
+re-imported through STEP/IGES, Frontal (`4`) remains the recommended algorithm
+in this build (see [Known issues](../troubleshooting.md)); HXT under WASM
+threads should be considered experimental.

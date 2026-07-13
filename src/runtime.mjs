@@ -9,9 +9,19 @@ const PTR = 4;
 
 export function buildApi(Module, descriptor) {
   const { _malloc, _free } = Module;
-  const u32 = () => Module.HEAPU32;
-  const i32 = () => Module.HEAP32;
-  const f64 = () => Module.HEAPF64;
+  // Under pthreads, Emscripten refreshes Module.HEAP* lazily per thread: a
+  // worker growing memory mid-call would leave this thread's views at the old
+  // (shorter) length. Re-derive views whenever the backing buffer changes.
+  let buf = null, HEAPU32, HEAP32, HEAPF64;
+  const refresh = () => {
+    buf = Module.wasmMemory.buffer;
+    HEAPU32 = new Uint32Array(buf);
+    HEAP32 = new Int32Array(buf);
+    HEAPF64 = new Float64Array(buf);
+  };
+  const u32 = () => (Module.wasmMemory.buffer !== buf && refresh(), HEAPU32);
+  const i32 = () => (Module.wasmMemory.buffer !== buf && refresh(), HEAP32);
+  const f64 = () => (Module.wasmMemory.buffer !== buf && refresh(), HEAPF64);
 
   const gmshFree = (p) => { if (p) Module._gmshFree(p); };
 

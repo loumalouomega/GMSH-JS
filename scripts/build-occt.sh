@@ -25,10 +25,14 @@ fi
 
 # --- Configure (static, headless) ------------------------------------------
 # -fexceptions: OCCT relies on C++ exceptions; must match the gmsh/emcc setting.
+# -pthread: every object linked into the shared-memory (pthread) module must be
+# compiled with the atomics/bulk-memory features, or wasm-ld rejects the link
+# ("--shared-memory is disallowed by ... "). Must match gmsh/emcc.
 emcmake cmake -S "$OCCT_SRC" -B "$OCCT_BUILD" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$OCCT_PREFIX" \
-  -DCMAKE_CXX_FLAGS="-fexceptions" \
+  -DCMAKE_C_FLAGS="-pthread" \
+  -DCMAKE_CXX_FLAGS="-fexceptions -pthread" \
   -DBUILD_LIBRARY_TYPE=Static \
   -DBUILD_MODULE_Draw=OFF \
   -DBUILD_MODULE_Visualization=OFF \

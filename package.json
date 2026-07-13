@@ -1,6 +1,6 @@
 {
   "name": "@loumalouomega/gmsh-wasm",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Gmsh mesher C API compiled to WebAssembly (geometry + meshing, no GUI)",
   "license": "GPL-2.0-or-later",
   "author": "Vicente Mataix Ferrándiz",
@@ -31,9 +31,10 @@
   ],
   "scripts": {
     "setup": "scripts/setup-emsdk.sh",
+    "build:libomp": "scripts/build-libomp.sh",
     "build:occt": "scripts/build-occt.sh",
     "build:wasm": "scripts/build-wasm.sh",
-    "build": "scripts/build-occt.sh && scripts/build-wasm.sh",
+    "build": "scripts/build-libomp.sh && scripts/build-occt.sh && scripts/build-wasm.sh",
     "gen": "scripts/gen-bindings.sh",
     "test": "node --test test/smoke.test.mjs test/api.test.mjs",
     "test:browser": "node --test test/browser.test.mjs",

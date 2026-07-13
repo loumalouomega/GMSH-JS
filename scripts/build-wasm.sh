@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build Gmsh's flat C API to WebAssembly.
-#   1. configure + build libgmsh.a with emcmake (headless, single-thread)
+#   1. configure + build libgmsh.a with emcmake (headless, OpenMP-threaded
+#      via pthreads + a wasm32 libomp from scripts/build-libomp.sh)
 #   2. emcc-link libgmsh.a (+ OCCT static libs when OCC is on) into a
 #      MODULARIZE'd reactor module, emitted as both ESM (.mjs) and CJS (.cjs)
 #      sharing one gmsh.wasm.
@@ -18,6 +19,11 @@ OPT="${OPT:--O3}"
 GMSH_SRC="$ROOT/gmsh"
 
 mkdir -p "$DIST"
+
+if [ ! -f "$LIBOMP_PREFIX/lib/libomp.a" ]; then
+  echo "libomp not built ($LIBOMP_PREFIX). Run scripts/build-libomp.sh." >&2
+  exit 1
+fi
 
 # --- 1. Configure gmsh -----------------------------------------------------
 occ_args=(-DENABLE_OCC=OFF)
@@ -48,18 +54,35 @@ if [ "$GMSH_ENABLE_OCC" = "ON" ]; then
 fi
 
 # TODO: Enable more flags for future developments
+# find_package(OpenMP) cannot autodetect under the Emscripten toolchain (its
+# try_compile fails to link — no libomp in the sysroot), and gmsh then silently
+# falls back to a serial build. Presetting all OpenMP_* variables makes
+# FindOpenMP accept our wasm32 libomp; the HAVE_OPENMP grep below guards
+# against any silent fallback.
 emcmake cmake -S "$GMSH_SRC" -B "$GMSH_BUILD" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_CXX_FLAGS="-fexceptions" \
+  -DCMAKE_C_FLAGS="-pthread" \
+  -DCMAKE_CXX_FLAGS="-fexceptions -pthread" \
+  -DCMAKE_EXE_LINKER_FLAGS="-pthread" \
   -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=OFF -DENABLE_BUILD_DYNAMIC=OFF \
   -DENABLE_FLTK=OFF -DENABLE_GRAPHICS=OFF -DENABLE_OS_SPECIFIC_INSTALL=OFF \
-  -DENABLE_OPENMP=OFF -DENABLE_MPI=OFF \
+  -DENABLE_OPENMP=ON -DENABLE_MPI=OFF \
+  -DOpenMP_C_FLAGS="-fopenmp -pthread -I$LIBOMP_PREFIX/include" \
+  -DOpenMP_C_LIB_NAMES="omp" \
+  -DOpenMP_CXX_FLAGS="-fopenmp -pthread -I$LIBOMP_PREFIX/include" \
+  -DOpenMP_CXX_LIB_NAMES="omp" \
+  -DOpenMP_omp_LIBRARY="$LIBOMP_PREFIX/lib/libomp.a" \
   -DENABLE_EIGEN=ON -DENABLE_BLAS_LAPACK=OFF \
   -DENABLE_PETSC=OFF -DENABLE_SLEPC=OFF -DENABLE_MUMPS=OFF \
   -DENABLE_MED=OFF -DENABLE_CGNS=OFF -DENABLE_HDF5=OFF \
   -DENABLE_MESH=ON -DENABLE_PARSER=ON -DENABLE_POST=ON \
   -DENABLE_TESTS=OFF \
   "${occ_args[@]}"
+
+# HAVE_OPENMP is only a CMake variable (gmsh sources test the compiler's
+# _OPENMP); the generated config records enabled options in a string.
+grep -q '#define GMSH_CONFIG_OPTIONS.* OpenMP ' "$GMSH_BUILD/src/common/GmshConfig.h" \
+  || { echo "OpenMP NOT enabled in gmsh configure (FindOpenMP fell back to serial) — refusing to build" >&2; exit 1; }
 
 cmake --build "$GMSH_BUILD" --target lib -- -j"$(nproc)"
 
@@ -78,24 +101,33 @@ if [ ! -f "$EXPORTS" ]; then
 fi
 
 # --- 3. emcc link (shared flags) ------------------------------------------
+# -pthread implies shared memory; emcc prints an advisory warning about
+# ALLOW_MEMORY_GROWTH + pthreads (JS-side heap-access overhead) — expected.
+# The pthread pool is pre-spawned: libomp's fork spin-waits on the calling
+# thread, and browsers cannot start brand-new Workers while the main thread is
+# blocked, so on-demand spawning would deadlock. Browsers size the pool from
+# hardwareConcurrency; Node <21.1 has no `navigator` and falls back to 4.
 common_flags=(
-  "$OPT" -fexceptions
+  "$OPT" -fexceptions -pthread
   -sMODULARIZE=1 -sEXPORT_NAME=initGmsh
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sMAXIMUM_MEMORY=4GB
   -sMALLOC=emmalloc
+  "-sPTHREAD_POOL_SIZE=(typeof navigator!=='undefined'&&navigator.hardwareConcurrency)||4"
   -sFORCE_FILESYSTEM=1
-  -sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,lengthBytesUTF8
+  -sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,lengthBytesUTF8,PThread,wasmMemory
   -sEXPORTED_FUNCTIONS=@"$EXPORTS"
-  -sENVIRONMENT=node,web
+  -sENVIRONMENT=node,web,worker
 )
 
 echo ">> Linking ESM core (dist/gmsh-core.mjs)"
-emcc "$LIBGMSH" "${occ_link_libs[@]}" "${common_flags[@]}" \
+emcc "$LIBGMSH" "${occ_link_libs[@]}" "$LIBOMP_PREFIX/lib/libomp.a" \
+  "${common_flags[@]}" \
   -sEXPORT_ES6=1 \
   -o "$DIST/gmsh-core.mjs"
 
 echo ">> Linking CJS core (dist/gmsh-core.cjs)"
-emcc "$LIBGMSH" "${occ_link_libs[@]}" "${common_flags[@]}" \
+emcc "$LIBGMSH" "${occ_link_libs[@]}" "$LIBOMP_PREFIX/lib/libomp.a" \
+  "${common_flags[@]}" \
   -o "$DIST/gmsh-core.cjs"
 
 # Both links emit an identical gmsh-core.wasm. Assemble the public entries
