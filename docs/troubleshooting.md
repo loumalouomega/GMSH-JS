@@ -1,20 +1,25 @@
 # Troubleshooting
 
-## 3D Delaunay produces zero tetrahedra on imported CAD
+## 3D meshing (Delaunay/HXT) hangs or produces zero tetrahedra on imported CAD
 
-**Symptom.** After `importShapes` (STEP/IGES) + `generate(3)`, the log shows
-`Meshing 3D...` and then `Recovering boundary`, but `getElements(3)` is empty.
+**If you hit this, you're on a `dist/` built before the `-sSTACK_SIZE` fix** (see
+[architecture.md](architecture.md#the-native-build)) — rebuild from a current
+checkout. Historically: after `importShapes` (STEP/IGES) + `generate(3)`, the
+log would show `Meshing 3D...`, then `Tetrahedrizing N nodes...`, and either
+hang indefinitely or (less often) complete with `getElements(3)` empty.
 
-**Cause.** The default 3D Delaunay boundary-recovery step is fragile in the WASM
-build for geometry round-tripped through CAD import. Native `occ`/`geo` solids
-are unaffected.
+**Cause.** Gmsh's tetgen-derived 3D boundary recovery (shared by the default
+Delaunay algorithm and HXT) recurses deeper than Emscripten's 64KB default
+stack. At `-O3` with no stack checks, the overflow silently corrupted adjacent
+linear memory instead of trapping, which surfaced as a hang or an empty mesh
+rather than a crash — reproducible even on small (~200-node), non-degenerate
+geometry, not just pathological inputs. `scripts/build-wasm.sh` now links with
+`-sSTACK_SIZE=4MB -sDEFAULT_PTHREAD_STACK_SIZE=2MB`.
 
-**Fix.** Use the Frontal 3D algorithm:
-
-```js
-gmsh.option.setNumber('Mesh.Algorithm3D', 4); // Frontal
-gmsh.model.mesh.generate(3);
-```
+If you still see this on a current build, please file an issue with the
+geometry and `Mesh.Algorithm3D` value — it likely needs a larger stack still
+(`OPT` and stack-size env overrides are documented in
+[building.md](building.md)).
 
 ## A call throws `Error: <fn>: is not exported in this build`
 

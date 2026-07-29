@@ -73,11 +73,22 @@ Emscripten link:
 -O3 -fexceptions -pthread
 -sMODULARIZE=1 -sEXPORT_NAME=initGmsh -sEXPORT_ES6=1 (ESM)
 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sMAXIMUM_MEMORY=4GB -sMALLOC=emmalloc
+-sSTACK_SIZE=4MB -sDEFAULT_PTHREAD_STACK_SIZE=2MB
+-sALLOW_TABLE_GROWTH=1
 -sPTHREAD_POOL_SIZE=(typeof navigator!=='undefined'&&navigator.hardwareConcurrency)||4
 -sFORCE_FILESYSTEM=1
+-sEXPORTED_RUNTIME_METHODS=...,addFunction,removeFunction
 -sEXPORTED_FUNCTIONS=@generated/exported_functions.json
 -sENVIRONMENT=node,web,worker
 ```
+
+`-sSTACK_SIZE`/`-sDEFAULT_PTHREAD_STACK_SIZE` raise Emscripten's 64KB default
+(both stacks live in linear memory, not an OS stack) — Gmsh's tetgen-derived
+3D boundary recovery (default Delaunay and HXT) recurses deep enough to
+silently corrupt memory at the default size. `-sALLOW_TABLE_GROWTH` +
+`addFunction`/`removeFunction` support `gmsh.model.mesh.setSizeCallback`,
+which marshals a JS function into a native function-pointer callback; see
+[Architecture](architecture.md#the-native-build).
 
 A no-OCC build (faster, smaller, no STEP/IGES) is available with:
 

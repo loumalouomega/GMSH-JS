@@ -307,6 +307,8 @@ export interface GmshModelMesh {
   getSizes(dimTags: number[]): { sizes: number[] };
   /** Set mesh size constraints at the given parametric points `parametricCoord' on the model entity of dimension `dim' and tag `tag'. Currently only entities of dimension 1 (lines) are handled. */
   setSizeAtParametricPoints(dim: number, tag: number, parametricCoord: number[], sizes: number[]): void;
+  /** Set a mesh size callback for the current model. The callback function should take six arguments as input (`dim', `tag', `x', `y', `z' and `lc'). The first two integer arguments correspond to the dimension `dim' and tag `tag' of the entity being meshed. The next four double precision arguments correspond to the coordinates `x', `y' and `z' around which to prescribe the mesh size and to the mesh size `lc' that would be prescribed if the callback had not been called. The callback function should return a double precision number specifying the desired mesh size; returning `lc' is equivalent to a no-op. */
+  setSizeCallback(callback: (dim: number, tag: number, x: number, y: number, z: number, lc: number) => number): void;
   /** Remove the mesh size callback from the current model. */
   removeSizeCallback(): void;
   /** Set a transfinite meshing constraint on the curve `tag', with `numNodes' nodes distributed according to `meshType' and `coef'. Currently supported types are "Progression" (geometrical progression with power `coef'), "Bump" (refinement toward both extremities of the curve) and "Beta" (beta law). */

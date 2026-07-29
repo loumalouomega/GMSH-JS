@@ -48,5 +48,16 @@ See [Marshalling](marshalling.md) for the precise rules and the full
 ## Not exposed
 
 - GUI/FLTK, OpenGL graphics, and on-screen post-processing views.
-- Function-pointer callbacks (e.g. a custom mesh-size callback) — these C
-  functions are present in the binary but omitted from the wrapper for v1.
+
+## Mesh size callback
+
+`gmsh.model.mesh.setSizeCallback(fn)` marshals a JS function into a native
+function-pointer callback that Gmsh invokes once per mesh vertex during
+`mesh.generate()`. It is the one function whose argument is a JS function
+rather than a plain value/array; see [Marshalling](marshalling.md).
+
+**Main-thread only.** The callback's WebAssembly table slot lives in the
+instance that created it and is not visible to OpenMP worker pthreads, so it
+only works reliably with `General.NumThreads` set to `1` (Gmsh's default). Set
+a callback while multithreaded meshing is enabled and the runtime logs a
+one-time warning; workers invoking the slot during meshing may fail.

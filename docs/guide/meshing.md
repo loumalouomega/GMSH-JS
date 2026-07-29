@@ -55,22 +55,28 @@ Set options **before** `generate()` with `gmsh.option.setNumber`.
 
 ```js
 gmsh.option.setNumber('Mesh.MeshSizeMax', 0.1);
-gmsh.option.setNumber('Mesh.Algorithm3D', 4);
 gmsh.model.mesh.generate(3);
 ```
 
-!!! warning "Known issue — 3D Delaunay on re-imported CAD"
-    In the WASM build, the **default 3D Delaunay** boundary recovery can fail
-    (zero tetrahedra) when meshing geometry round-tripped through **STEP/IGES
-    import**. Native `occ`/`geo` solids are unaffected. Workaround — use the
-    Frontal algorithm:
+### Hex-dominant meshing (experimental)
 
-    ```js
-    gmsh.option.setNumber('Mesh.Algorithm3D', 4); // Frontal
-    gmsh.model.mesh.generate(3);
-    ```
+Gmsh's hex-tet hybrid recombiner is only reachable through the experimental
+RTree 3D algorithm (`Mesh.Algorithm3D = 9`) — `Mesh.Recombine3DAll` is a no-op
+under Delaunay/Frontal/HXT, and combining `Mesh.RecombineAll` with Frontal
+throws `Cannot use frontal 3D algorithm with quadrangles on boundary` (an
+ordering bug in upstream Gmsh, not this build). This is how Gmsh itself gates
+the feature, not a gap in the WASM build:
 
-    See [Troubleshooting](../troubleshooting.md).
+```js
+gmsh.option.setNumber('Mesh.Algorithm3D', 9);      // RTree
+gmsh.option.setNumber('Mesh.Recombine3DAll', 1);
+gmsh.model.mesh.generate(3);
+// -> a mix of element type 4 (tet) and 5 (hex), stitched by type-140
+//    "trihedron" connector elements at the tet/hex interface.
+```
+
+Treat this path as experimental (upstream describes it as such); prefer the
+default Delaunay or HXT algorithms for production meshes.
 
 ## Higher-order and optimisation
 
@@ -99,6 +105,25 @@ gmsh.model.mesh.field.setAsBackgroundMesh(t);
 gmsh.model.mesh.generate(2);
 ```
 
+### Size callback
+
+For sizing that can't be expressed as a field, `setSizeCallback` installs a JS
+function Gmsh calls once per mesh vertex:
+
+```js
+gmsh.option.setNumber('General.NumThreads', 1); // required, see below
+gmsh.model.mesh.setSizeCallback((dim, tag, x, y, z, lc) => {
+  return x < 0.5 ? 0.02 : lc; // refine near x=0, leave the rest as-is
+});
+gmsh.model.mesh.generate(2);
+gmsh.model.mesh.removeSizeCallback();
+```
+
+**Main-thread only**: the callback is a native function pointer installed via
+Emscripten's `addFunction`, which is per-thread — it is not reachable from
+OpenMP worker pthreads. Keep `General.NumThreads` at `1` (Gmsh's default)
+while a callback is set; the runtime warns once if it detects otherwise.
+
 ## Threads
 
 This build is **OpenMP-enabled** (pthreads). Gmsh still defaults to 1 thread;
@@ -117,7 +142,7 @@ headers) — see [Browser usage](browser.md#threads-headers). Avoid setting the
 thread count above `navigator.hardwareConcurrency`: the pthread worker pool is
 sized to the core count, and oversubscribing it can deadlock the main thread.
 
-The OpenMP-parallel 3D mesher is HXT (`Mesh.Algorithm3D = 10`). For CAD
-re-imported through STEP/IGES, Frontal (`4`) remains the recommended algorithm
-in this build (see [Known issues](../troubleshooting.md)); HXT under WASM
-threads should be considered experimental.
+The OpenMP-parallel 3D mesher is HXT (`Mesh.Algorithm3D = 10`); it works on CAD
+re-imported through STEP/IGES the same as the default Delaunay algorithm.
+`setSizeCallback` (see [API overview](../api/overview.md#mesh-size-callback))
+is main-thread-only and incompatible with `General.NumThreads > 1`.

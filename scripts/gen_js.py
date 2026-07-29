@@ -107,6 +107,7 @@ INPUT_TS = {
     "ivectordouble": "number[]", "ivectorstring": "string[]",
     "ivectorpair": "number[]", "ivectorvectorint": "number[][]",
     "ivectorvectorsize": "number[][]", "ivectorvectordouble": "number[][]",
+    "isizefun": "(dim: number, tag: number, x: number, y: number, z: number, lc: number) => number",
 }
 OUTPUT_KINDS = {
     "oint", "osize", "odouble", "ostring", "ovectorint", "ovectorsize",
@@ -146,8 +147,6 @@ def collect(api):
             unsupported = False
             for a in args:
                 kind = getattr(a, "kind", None)
-                if kind in ("isizefun",):
-                    unsupported = True  # function-pointer callback: skip wrapper
                 desc_args.append({
                     "name": a.name,
                     "kind": kind,

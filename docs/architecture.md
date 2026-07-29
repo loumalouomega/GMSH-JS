@@ -60,6 +60,21 @@ the complex `T***` output handling in one tested implementation. See
 - `emcc` links `libgmsh.a` (+ the OCCT `libTK*.a` + `libomp.a`) with `-pthread`
   into a `MODULARIZE`d reactor module, emitted as both ESM and CJS sharing one
   `gmsh-core.wasm`.
+- **Stack size** is raised from Emscripten's 64KB default to
+  `-sSTACK_SIZE=4MB` (main thread) and `-sDEFAULT_PTHREAD_STACK_SIZE=2MB`
+  (OpenMP worker pthreads) — both stacks live in linear memory, not an OS
+  stack. Gmsh's tetgen-derived 3D boundary recovery (shared by the default
+  Delaunay algorithm and HXT) recurses deep enough that the 64KB default
+  silently corrupted adjacent memory at `-O3` (no stack checks), surfacing as
+  a hang or an empty mesh rather than a crash — reproducible even on small,
+  non-degenerate geometry.
+- **`-sALLOW_TABLE_GROWTH=1`** plus `addFunction`/`removeFunction` in
+  `-sEXPORTED_RUNTIME_METHODS` support `gmsh.model.mesh.setSizeCallback`, the
+  one JS→WASM function-pointer callback in the API (`isizefun` in the
+  descriptor). `Module.addFunction` table slots are per-thread, so the
+  callback only works reliably with `General.NumThreads=1` — see
+  `src/runtime.mjs`'s `isizefun` case and
+  [Marshalling](api/marshalling.md).
 
 ## Assembly (`scripts/assemble.mjs`)
 

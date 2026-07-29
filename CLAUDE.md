@@ -80,9 +80,22 @@ emsdk is **not on PATH**; the scripts activate it via `scripts/env.sh`
   OCCT, libomp), or wasm-ld fails with `--shared-memory is disallowed by ...`.
   Keep the `-pthread` flags in build-libomp.sh / build-occt.sh / build-wasm.sh
   in sync, and clean-rebuild OCCT after toggling them.
-- **3D Delaunay on re-imported CAD fails boundary recovery** in WASM (zero tets).
-  Use `gmsh.option.setNumber('Mesh.Algorithm3D', 4)` (Frontal). Native geometry
-  is fine. Tests use the Frontal path for the STEP round-trip.
+- **wasm32 stacks live in linear memory; Emscripten's default is 64KB** for both
+  the main thread and pthreads. Gmsh's tetgen-derived 3D boundary recovery
+  (shared by the default Delaunay algorithm and HXT) is recursive; at `-O3`
+  with no stack checks, overflowing 64KB silently corrupts adjacent memory
+  instead of trapping — it showed up as a hang or an empty mesh (`getElements`
+  returning nothing), even on small, non-degenerate geometry. Fixed by
+  `-sSTACK_SIZE=4MB -sDEFAULT_PTHREAD_STACK_SIZE=2MB` in `build-wasm.sh`. If a
+  similar hang/empty-mesh symptom reappears, suspect this class of bug first
+  (check whether a new code path recurses deeper) before assuming it's an
+  algorithm-correctness issue.
+- **`Module.addFunction` table slots are per-`WebAssembly.Instance`**, i.e.
+  per pthread worker — there is no Emscripten mechanism to sync a growable
+  table across threads outside `MAIN_MODULE` builds. `setSizeCallback` (the
+  one JS→WASM callback in this codebase) only works reliably at
+  `General.NumThreads=1` (Gmsh's default); `src/runtime.mjs` warns once if it
+  isn't.
 - **Python is externally-managed (PEP 668).** For local docs builds install with
   `pip install --user --break-system-packages -r docs/requirements.txt` (CI uses
   a clean runner so it's fine there).

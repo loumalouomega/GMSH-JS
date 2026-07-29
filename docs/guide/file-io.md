@@ -68,7 +68,6 @@ gmsh.model.add('imported');
 const { outDimTags } = gmsh.model.occ.importShapes('/box.step'); // [3, 1]
 gmsh.model.occ.synchronize();
 
-gmsh.option.setNumber('Mesh.Algorithm3D', 4); // see Known issue in Meshing
 gmsh.model.mesh.generate(3);
 ```
 

@@ -15,7 +15,7 @@
   `Cross-Origin-Opener-Policy: same-origin` +
   `Cross-Origin-Embedder-Policy: require-corp`
 - 🧩 **Typed, ergonomic API** — hides the C `ierr` out-parameter and all manual memory management
-- 🤖 **341 functions generated** from Gmsh's own API definition, so the bindings never drift from the upstream version; ships a complete `.d.ts`
+- 🤖 **342 functions generated** from Gmsh's own API definition, so the bindings never drift from the upstream version; ships a complete `.d.ts`
 - 📦 Dual **ESM + CJS** entry points; the `.wasm` is a separate asset
 
 > **📚 Full documentation:** <https://loumalouomega.github.io/GMSH-JS/>
@@ -141,16 +141,7 @@ VS Code users: the same actions are available as tasks (**Terminal → Run Task*
 
 ## Known issues
 
-- **3D Delaunay boundary recovery on re-imported CAD.** The default 3D meshing algorithm (Delaunay) can fail boundary recovery — producing zero tetrahedra — when meshing geometry round-tripped through STEP/IGES import in the WASM build.
-  Native `occ`/`geo` solids mesh fine with the default. Workaround — select the
-  Frontal algorithm:
-
-  ```js
-  gmsh.option.setNumber('Mesh.Algorithm3D', 4); // Frontal
-  gmsh.model.mesh.generate(3);
-  ```
-
-  Specific to the Emscripten target (native builds recover reliably); tracked for a future fix. See the [troubleshooting](https://loumalouomega.github.io/GMSH-JS/troubleshooting/) docs.
+- **Hex-dominant recombination (`Mesh.Recombine3DAll`) is only reachable via the experimental RTree algorithm.** Upstream Gmsh only invokes its hex-tet hybrid recombiner (`meshCombine3D`) when `Mesh.Algorithm3D = 9` (RTree); the `Mesh.Recombine3DLevel`/`Mesh.Recombine3DConformity` options are dead code, and combining `Mesh.RecombineAll` with the Frontal 3D algorithm throws `"Cannot use frontal 3D algorithm with quadrangles on boundary"` (an ordering bug in upstream Gmsh, not specific to this build). This is not a gap in this WASM build — `HAVE_DOMHEX`/`HAVE_HXT` are both enabled — it is how Gmsh itself gates the feature. See [Meshing](https://loumalouomega.github.io/GMSH-JS/guide/meshing/) for a working example.
 
 ## Licensing — important
 

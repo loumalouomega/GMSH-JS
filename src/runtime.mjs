@@ -4,6 +4,10 @@
 // emits only data, never marshalling code.
 //
 // wasm32 layout: pointers and size_t are 4 bytes; double is 8 bytes.
+//
+// One exception to "every call's resources are freed when the call returns":
+// setSizeCallback's function-pointer table slot outlives its call (Gmsh
+// invokes it later, from mesh.generate()) — see releaseSizeCbSlot below.
 
 const PTR = 4;
 
@@ -24,6 +28,19 @@ export function buildApi(Module, descriptor) {
   const f64 = () => (Module.wasmMemory.buffer !== buf && refresh(), HEAPF64);
 
   const gmshFree = (p) => { if (p) Module._gmshFree(p); };
+
+  // gmsh.model.mesh.setSizeCallback marshals a JS function into a native
+  // function-pointer table slot that Gmsh stores and invokes later, from
+  // inside mesh.generate() — it must outlive the call that installed it, so
+  // it is freed only when replaced (by a later setSizeCallback) or dropped
+  // (removeSizeCallback / finalize), never in makeCall's per-call `finally`.
+  // Table growth is per-`WebAssembly.Instance` (i.e. per pthread worker),
+  // so the slot is only reachable on the thread that added it.
+  let sizeCbSlot = 0;
+  let warnedSizeCbThreads = false;
+  const releaseSizeCbSlot = () => {
+    if (sizeCbSlot) { Module.removeFunction(sizeCbSlot); sizeCbSlot = 0; }
+  };
 
   // --- input writers: return the C arguments + register temp frees ----------
   function writeIntArray(values) {
@@ -87,12 +104,15 @@ export function buildApi(Module, descriptor) {
   function makeCall(fn) {
     const fptr = Module["_" + fn.c];
     const hasRet = fn.ret !== null && fn.ret !== undefined;
+    const isSetSizeCb = fn.c === "gmshModelMeshSetSizeCallback";
+    const releasesSizeCb = fn.c === "gmshModelMeshRemoveSizeCallback" || fn.c === "gmshFinalize";
     return function (...jsArgs) {
       if (!fptr) throw new Error(`gmsh: ${fn.c} is not exported in this build`);
       const cargs = [];
       const frees = [];        // heap blocks to _free after the call
       const outputs = [];      // {name, kind, ptrSlots:[...]}
       let ai = 0;              // index into jsArgs (input params only)
+      let newSizeCbSlot = 0;   // set only when isSetSizeCb
 
       for (const a of fn.args) {
         if (a.output) {
@@ -155,6 +175,29 @@ export function buildApi(Module, descriptor) {
             frees.push(pp, pn);
             cargs.push(pp, pn, outer.length); break;
           }
+          case "isizefun": {
+            if (typeof v !== "function") throw new TypeError(`gmsh: ${fn.c} expects a function`);
+            if (typeof Module.addFunction !== "function") {
+              throw new Error(`gmsh: ${fn.c} requires a build linked with addFunction support (rebuild dist/)`);
+            }
+            if (isSetSizeCb && !warnedSizeCbThreads) {
+              try {
+                if (root.option.getNumber("General.NumThreads").value !== 1) {
+                  warnedSizeCbThreads = true;
+                  console.warn(
+                    "gmsh: setSizeCallback's function-pointer table slot is only valid on " +
+                    "the thread that created it; set General.NumThreads to 1 (gmsh's default) " +
+                    "while a mesh size callback is installed, or worker threads invoking it " +
+                    "during meshing may fail."
+                  );
+                }
+              } catch (_) { /* option read best-effort */ }
+            }
+            const wrapped = (dim, tag, x, y, z, lc, _data) => +v(dim, tag, x, y, z, lc);
+            newSizeCbSlot = Module.addFunction(wrapped, "diiddddi");
+            cargs.push(newSizeCbSlot, 0);
+            break;
+          }
           default: throw new Error(`gmsh: unsupported arg kind ${a.kind} in ${fn.c}`);
         }
       }
@@ -169,6 +212,11 @@ export function buildApi(Module, descriptor) {
         const code = i32()[ierr >> 2];
         if (code !== 0) throw lastError(fn.c, code);
 
+        // Gmsh has now taken ownership of the new slot (or dropped it, for
+        // removeSizeCallback/finalize) — release whatever it replaces.
+        if (isSetSizeCb) { releaseSizeCbSlot(); sizeCbSlot = newSizeCbSlot; }
+        else if (releasesSizeCb) { releaseSizeCbSlot(); }
+
         if (outputs.length === 0) {
           return hasRet ? ret : undefined;
         }
@@ -176,6 +224,10 @@ export function buildApi(Module, descriptor) {
         if (hasRet) result.value = ret;
         for (const o of outputs) result[o.name] = readOutput(o);
         return result;
+      } catch (e) {
+        // Gmsh never stored this slot — free it here instead of leaking it.
+        if (newSizeCbSlot) Module.removeFunction(newSizeCbSlot);
+        throw e;
       } finally {
         for (const p of frees) _free(p);
         for (const o of outputs) for (const s of o.slots) _free(s);

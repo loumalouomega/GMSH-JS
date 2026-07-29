@@ -107,14 +107,32 @@ fi
 # thread, and browsers cannot start brand-new Workers while the main thread is
 # blocked, so on-demand spawning would deadlock. Browsers size the pool from
 # hardwareConcurrency; Node <21.1 has no `navigator` and falls back to 4.
+#
+# STACK_SIZE / DEFAULT_PTHREAD_STACK_SIZE: emscripten's default is 64KB for
+# both the main thread and pthreads. Gmsh's tetgen-derived 3D boundary
+# recovery (tetgenBR.cxx, used by both the default Delaunay algorithm and
+# HXT) is recursive; at -O3 with no stack checks, overflowing 64KB silently
+# corrupts adjacent linear memory instead of trapping, which manifests as
+# hangs/zero-tet output rather than a crash. Both stacks live in linear
+# memory (INITIAL_MEMORY/growth), not the OS stack, so raise them explicitly.
+#
+# ALLOW_TABLE_GROWTH + addFunction/removeFunction: required for
+# gmsh.model.mesh.setSizeCallback, which marshals a JS mesh-size function into
+# a native function-pointer callback via Module.addFunction(). Table growth
+# and addFunction() are per-`WebAssembly.Instance` (i.e. per-thread) with no
+# emscripten mechanism to sync across pthread workers outside MAIN_MODULE
+# builds — callbacks only work reliably when General.NumThreads=1 (gmsh's
+# default), see src/runtime.mjs.
 common_flags=(
   "$OPT" -fexceptions -pthread
   -sMODULARIZE=1 -sEXPORT_NAME=initGmsh
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sMAXIMUM_MEMORY=4GB
   -sMALLOC=emmalloc
+  -sSTACK_SIZE=4MB -sDEFAULT_PTHREAD_STACK_SIZE=2MB
+  -sALLOW_TABLE_GROWTH=1
   "-sPTHREAD_POOL_SIZE=(typeof navigator!=='undefined'&&navigator.hardwareConcurrency)||4"
   -sFORCE_FILESYSTEM=1
-  -sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,lengthBytesUTF8,PThread,wasmMemory
+  -sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,lengthBytesUTF8,PThread,wasmMemory,addFunction,removeFunction
   -sEXPORTED_FUNCTIONS=@"$EXPORTS"
   -sENVIRONMENT=node,web,worker
 )
