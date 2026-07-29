@@ -17,8 +17,12 @@ you do not write any of this, but understanding it explains the API shapes.
 | `vector<string>` | `string[]` | `const char* const*, size_t n` |
 | `vector<pair>` | `number[]` flat | `const int*, size_t n` (n = flattened length) |
 | `vector<vector<int>>` | `number[][]` | `const int* const*, const size_t*, size_t nn` |
+| mesh size callback (`setSizeCallback` only) | `(dim, tag, x, y, z, lc) => number` | native function pointer, via `Module.addFunction` |
 
-All temporary heap allocations for inputs are freed after the call.
+All temporary heap allocations for inputs are freed after the call — except
+the mesh size callback's function-pointer table slot, which Gmsh stores and
+invokes later during `mesh.generate()`; it is released only when replaced by
+a later `setSizeCallback` call, or dropped by `removeSizeCallback`/`finalize`.
 
 ## Outputs
 

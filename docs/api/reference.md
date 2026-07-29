@@ -3,7 +3,7 @@
 !!! note
     This page is generated from the Gmsh API definition (version **5.0.0**) by `scripts/gen_docs_api.py` and is regenerated in CI. Every function hides the C `ierr` out-parameter and all manual memory management; see [Marshalling](marshalling.md) for how arguments and return values are converted.
 
-**341 functions** across 14 modules. GUI/visualization functions (`fltk`, `graphics`, `view`) are intentionally excluded.
+**342 functions** across 14 modules. GUI/visualization functions (`fltk`, `graphics`, `view`) are intentionally excluded.
 
 Conventions:
 
@@ -3616,6 +3616,20 @@ Set mesh size constraints at the given parametric points `parametricCoord' on th
 | `sizes` | `number[]` | *required* |
 
 <small>Gmsh C symbol: `gmshModelMeshSetSizeAtParametricPoints`</small>
+
+### `setSizeCallback`
+
+```ts
+gmsh.model.mesh.setSizeCallback(callback: (dim: number, tag: number, x: number, y: number, z: number, lc: number) => number): void
+```
+
+Set a mesh size callback for the current model. The callback function should take six arguments as input (`dim', `tag', `x', `y', `z' and `lc'). The first two integer arguments correspond to the dimension `dim' and tag `tag' of the entity being meshed. The next four double precision arguments correspond to the coordinates `x', `y' and `z' around which to prescribe the mesh size and to the mesh size `lc' that would be prescribed if the callback had not been called. The callback function should return a double precision number specifying the desired mesh size; returning `lc' is equivalent to a no-op.
+
+| Parameter | Type | Default |
+|-----------|------|---------|
+| `callback` | `(dim: number, tag: number, x: number, y: number, z: number, lc: number) => number` | *required* |
+
+<small>Gmsh C symbol: `gmshModelMeshSetSizeCallback`</small>
 
 ### `setSizeFromBoundary`
 
