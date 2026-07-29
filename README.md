@@ -9,19 +9,13 @@
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-654ff0?logo=webassembly&logoColor=white)](https://webassembly.org)
 [![license](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-[Gmsh](https://gmsh.info) — a three-dimensional finite-element mesh generator —
-compiled to **WebAssembly** and exposed to JavaScript/TypeScript through its flat
-`extern "C"` API. Geometry kernels (built-in `geo` + OpenCASCADE `occ`, incl.
-STEP/IGES/BREP import) and the full mesh module; **no GUI / visualization**.
+[Gmsh](https://gmsh.info) — a three-dimensional finite-element mesh generator — compiled to **WebAssembly** and exposed to JavaScript/TypeScript through its flat `extern "C"` API. Geometry kernels (built-in `geo` + OpenCASCADE `occ`, incl. STEP/IGES/BREP import) and the full mesh module; **no GUI / visualization**.
 
-- ⚡ Runs in **Node** and the **browser** — **multithreaded** (OpenMP via
-  pthreads). Browser pages must be cross-origin isolated: serve with
+- ⚡ Runs in **Node** and the **browser** — **multithreaded** (OpenMP via pthreads). Browser pages must be cross-origin isolated: serve with
   `Cross-Origin-Opener-Policy: same-origin` +
   `Cross-Origin-Embedder-Policy: require-corp`
-- 🧩 **Typed, ergonomic API** — hides the C `ierr` out-parameter and all manual
-  memory management
-- 🤖 **341 functions generated** from Gmsh's own API definition, so the bindings
-  never drift from the upstream version; ships a complete `.d.ts`
+- 🧩 **Typed, ergonomic API** — hides the C `ierr` out-parameter and all manual memory management
+- 🤖 **341 functions generated** from Gmsh's own API definition, so the bindings never drift from the upstream version; ships a complete `.d.ts`
 - 📦 Dual **ESM + CJS** entry points; the `.wasm` is a separate asset
 
 > **📚 Full documentation:** <https://loumalouomega.github.io/GMSH-JS/>
@@ -32,8 +26,7 @@ STEP/IGES/BREP import) and the full mesh module; **no GUI / visualization**.
 npm install @loumalouomega/gmsh-wasm
 ```
 
-No build step for consumers — the package ships a prebuilt `.wasm`, dual
-ESM/CJS entries, and TypeScript types.
+No build step for consumers — the package ships a prebuilt `.wasm`, dual ESM/CJS entries, and TypeScript types.
 
 ## Quick start
 
@@ -74,28 +67,21 @@ CommonJS: `const initialize = require('@loumalouomega/gmsh-wasm');` then the sam
 
 ### Two `initialize` steps
 
-`await initialize()` loads the WASM module; `gmsh.initialize()` starts the Gmsh
-library (mirrors `gmsh::initialize()` in the C++/Python APIs). Pair with
-`gmsh.finalize()`.
+`await initialize()` loads the WASM module; `gmsh.initialize()` starts the Gmsh library (mirrors `gmsh::initialize()` in the C++/Python APIs). Pair with `gmsh.finalize()`.
 
 ### Threads
 
-The build is OpenMP-enabled (pthreads). Gmsh defaults to 1 thread; opt into
-parallelism per session:
+The build is OpenMP-enabled (pthreads). Gmsh defaults to 1 thread; opt into parallelism per session:
 
 ```js
 gmsh.option.setNumber('General.NumThreads', 0); // 0 = all cores (or set an explicit count)
 ```
 
-Node needs no special flags. In the **browser**, threads require
-`SharedArrayBuffer`, so the page must be served with the COOP/COEP headers
-above — see the
-[browser guide](https://loumalouomega.github.io/GMSH-JS/guide/browser/).
+Node needs no special flags. In the **browser**, threads require `SharedArrayBuffer`, so the page must be served with the COOP/COEP headers above — see the [browser guide](https://loumalouomega.github.io/GMSH-JS/guide/browser/).
 
 ## File I/O (MEMFS)
 
-Gmsh reads/writes files through Emscripten's in-memory filesystem. Stage inputs
-and read outputs via `gmsh.FS`:
+Gmsh reads/writes files through Emscripten's in-memory filesystem. Stage inputs and read outputs via `gmsh.FS`:
 
 ```js
 gmsh.FS.writeFile('/in.step', stepBytes);        // Uint8Array
@@ -134,8 +120,7 @@ npm run build:wasm   # gen bindings, build gmsh, link + assemble dist/
 npm test
 ```
 
-`npm run build` runs `build:libomp`, `build:occt`, then `build:wasm`. For a smaller artifact
-without STEP/IGES (≈12 MB vs ≈45 MB): `GMSH_ENABLE_OCC=OFF npm run build:wasm`.
+`npm run build` runs `build:libomp`, `build:occt`, then `build:wasm`. For a smaller artifact without STEP/IGES (≈12 MB vs ≈45 MB): `GMSH_ENABLE_OCC=OFF npm run build:wasm`.
 
 ## npm scripts
 
@@ -156,9 +141,7 @@ VS Code users: the same actions are available as tasks (**Terminal → Run Task*
 
 ## Known issues
 
-- **3D Delaunay boundary recovery on re-imported CAD.** The default 3D meshing
-  algorithm (Delaunay) can fail boundary recovery — producing zero tetrahedra —
-  when meshing geometry round-tripped through STEP/IGES import in the WASM build.
+- **3D Delaunay boundary recovery on re-imported CAD.** The default 3D meshing algorithm (Delaunay) can fail boundary recovery — producing zero tetrahedra — when meshing geometry round-tripped through STEP/IGES import in the WASM build.
   Native `occ`/`geo` solids mesh fine with the default. Workaround — select the
   Frontal algorithm:
 
@@ -167,26 +150,18 @@ VS Code users: the same actions are available as tasks (**Terminal → Run Task*
   gmsh.model.mesh.generate(3);
   ```
 
-  Specific to the Emscripten target (native builds recover reliably); tracked for
-  a future fix. See the [troubleshooting](https://loumalouomega.github.io/GMSH-JS/troubleshooting/) docs.
+  Specific to the Emscripten target (native builds recover reliably); tracked for a future fix. See the [troubleshooting](https://loumalouomega.github.io/GMSH-JS/troubleshooting/) docs.
 
 ## Licensing — important
 
-Gmsh is distributed under the **GNU General Public License, version 2 or later**
-(GPL-2.0-or-later), with a linking exception covering Netgen, METIS, OpenCASCADE
-and ParaView. Because this package **statically links** Gmsh (and OpenCASCADE)
-into the `.wasm`, the resulting artifact and this package are likewise governed
-by the **GPL-2.0-or-later**. Any software that distributes this package inherits
-those obligations. A separate **commercial license** for Gmsh is available from
-its authors — see <https://gmsh.info>.
+Gmsh is distributed under the **GNU General Public License, version 2 or later** (GPL-2.0-or-later), with a linking exception covering Netgen, METIS, OpenCASCADE and ParaView. Because this package **statically links** Gmsh (and OpenCASCADE)
+into the `.wasm`, the resulting artifact and this package are likewise governed by the **GPL-2.0-or-later**. Any software that distributes this package inherits those obligations. A separate **commercial license** for Gmsh is available from its authors — see <https://gmsh.info>.
 
-This is an independent packaging effort and is **not** affiliated with or
-endorsed by the Gmsh authors.
+This is an independent packaging effort and is **not** affiliated with or endorsed by the Gmsh authors.
 
 ### Attribution
 
 - Gmsh — C. Geuzaine and J.-F. Remacle. <https://gmsh.info> — GPL-2.0-or-later.
-- OpenCASCADE Technology (OCCT) — <https://dev.opencascade.org> — LGPL-2.1 with
-  exception.
+- OpenCASCADE Technology (OCCT) — <https://dev.opencascade.org> — LGPL-2.1 with exception.
 
 See [LICENSE](LICENSE) and the upstream `gmsh/LICENSE.txt`.
