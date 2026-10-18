@@ -1,7 +1,7 @@
 # Toolchain & build artifacts
 /.emsdk/
 /build/
-/third_party/occt/
+/third_party/
 /dist/*.wasm
 /dist/*.mjs
 /dist/*.cjs

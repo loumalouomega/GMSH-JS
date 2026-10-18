@@ -12,7 +12,8 @@ Outputs (into generated/):
   - gmsh.d.ts               : TypeScript declarations for the typed wrapper.
 
 We do NOT hand-marshal per function: the runtime interprets the descriptor.
-GUI/visualization modules (fltk, graphics, view) are filtered out.
+GUI modules (fltk, graphics) are filtered out. The post-processing `view`
+module is kept: it needs no GUI (Gmsh built with ENABLE_POST).
 """
 
 import os
@@ -24,7 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 API_DIR = os.path.join(ROOT, "gmsh", "api")
 OUT_DIR = os.path.join(ROOT, "generated")
 
-GUI_MODULES = {"fltk", "graphics", "view"}
+GUI_MODULES = {"fltk", "graphics"}
 
 # ---------------------------------------------------------------------------
 # Load the API definition, tagging every arg with a `.kind` as it is created.

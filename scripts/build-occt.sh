@@ -15,12 +15,20 @@ if [ ! -f "$OCCT_SRC/CMakeLists.txt" ]; then
   echo ">> Fetching OCCT $OCCT_TAG"
   mkdir -p "$THIRD_PARTY"
   tarball="$THIRD_PARTY/occt-$OCCT_TAG.tar.gz"
-  curl -fL -o "$tarball" \
-    "https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/$OCCT_TAG.tar.gz"
   rm -rf "$OCCT_SRC"
-  mkdir -p "$OCCT_SRC"
-  tar -xzf "$tarball" -C "$OCCT_SRC" --strip-components=1
-  rm -f "$tarball"
+  if curl -fL -o "$tarball" \
+      "https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/$OCCT_TAG.tar.gz"; then
+    mkdir -p "$OCCT_SRC"
+    tar -xzf "$tarball" -C "$OCCT_SRC" --strip-components=1
+    rm -f "$tarball"
+  else
+    # Networks that only allow the git protocol to github.com (no archive
+    # downloads) can still fetch the pinned tag.
+    echo ">> tarball download failed; falling back to git clone of $OCCT_TAG"
+    rm -f "$tarball"
+    git clone --depth 1 --branch "$OCCT_TAG" \
+      https://github.com/Open-Cascade-SAS/OCCT.git "$OCCT_SRC"
+  fi
 fi
 
 # --- Configure (static, headless) ------------------------------------------
