@@ -19,3 +19,6 @@ npm-debug.log*
 
 # Generated files
 node_modules
+
+# Python bytecode
+__pycache__/
