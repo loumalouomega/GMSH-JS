@@ -31,8 +31,9 @@ gmshLoggerGetLastError  ->  gmsh.logger.getLastError
 | `gmsh.plugin` | post-processing plugins |
 | `gmsh.parser` | `.geo` parser access |
 
-GUI/visualization modules (`fltk`, `graphics`, `view`) are intentionally
-**excluded** — this build has no GUI.
+GUI modules (`fltk`, `graphics`) are intentionally **excluded** — this build
+has no GUI. The `view` module (post-processing data: add, read, probe, write)
+is included; it needs no GUI.
 
 ## Calling conventions
 
@@ -47,7 +48,7 @@ See [Marshalling](marshalling.md) for the precise rules and the full
 
 ## Not exposed
 
-- GUI/FLTK, OpenGL graphics, and on-screen post-processing views.
+- GUI/FLTK and OpenGL graphics, including on-screen rendering of views.
 
 ## Mesh size callback
 

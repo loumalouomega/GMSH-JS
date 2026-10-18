@@ -10,8 +10,8 @@ and this file need updating too — and update them if they do.
 
 `gmsh-wasm` compiles the **Gmsh** mesher's flat C API (`gmsh/api/gmshc.h`) to
 WebAssembly with Emscripten and wraps it in a typed JS/TS API. Geometry (`geo` +
-OpenCASCADE `occ`) and meshing only — **no GUI** (`fltk`/`graphics`/`view` are
-filtered out everywhere). Targets Node and the browser; multithreaded via
+OpenCASCADE `occ`) and meshing only — **no GUI** (`fltk`/`graphics` are
+filtered out everywhere; the `view` post-processing data API is included). Targets Node and the browser; multithreaded via
 OpenMP/pthreads (browsers need COOP/COEP headers for `SharedArrayBuffer`).
 
 ## Architecture (how a change flows)

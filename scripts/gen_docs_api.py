@@ -55,7 +55,7 @@ def main():
         "",
         f"**{len(funcs)} functions** across "
         f"{len(groups)} modules. GUI/visualization functions "
-        "(`fltk`, `graphics`, `view`) are intentionally excluded.",
+        "(`fltk`, `graphics`) are intentionally excluded; `view` is included.",
         "",
         "Conventions:",
         "",

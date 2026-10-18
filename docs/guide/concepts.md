@@ -17,7 +17,7 @@ object tree that matches the module hierarchy:
 The modules are: top-level `gmsh`, `gmsh.option`, `gmsh.model`,
 `gmsh.model.geo`, `gmsh.model.occ`, `gmsh.model.mesh` (and `mesh.field`),
 `gmsh.logger`, `gmsh.onelab`, `gmsh.plugin`, `gmsh.parser`. The GUI modules
-(`fltk`, `graphics`, `view`) are **excluded** by design.
+(`fltk`, `graphics`) are **excluded** by design; the `view` data API is included.
 
 ## Error handling
 

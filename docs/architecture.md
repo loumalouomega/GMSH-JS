@@ -34,7 +34,7 @@ with its kind, and emits three artifacts:
    JS name, C symbol, return kind, and typed argument list with defaults.
 3. **`gmsh.d.ts`** — TypeScript declarations.
 
-GUI modules (`fltk`, `graphics`, `view`) are filtered out. Because everything
+GUI modules (`fltk`, `graphics`) are filtered out; `view` is kept. Because everything
 derives from the upstream definition, the bindings cannot drift from the Gmsh
 version in the submodule.
 
