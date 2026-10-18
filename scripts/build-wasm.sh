@@ -18,6 +18,12 @@ GMSH_ENABLE_OCC="${GMSH_ENABLE_OCC:-ON}"
 OPT="${OPT:--O3}"
 GMSH_SRC="$ROOT/gmsh"
 
+# Build provenance, surfaced through General.BuildInfo ("Packaged by"): the
+# gmsh-wasm package version and the exact Gmsh commit that was compiled.
+PKG_VERSION="$(node -p "require('$ROOT/package.json').version")"
+GMSH_COMMIT="$(git -C "$GMSH_SRC" rev-parse HEAD 2>/dev/null || echo unknown)"
+GMSH_PACKAGER="gmsh-wasm-${PKG_VERSION} (gmsh-commit ${GMSH_COMMIT})"
+
 mkdir -p "$DIST"
 
 if [ ! -f "$LIBOMP_PREFIX/lib/libomp.a" ]; then
@@ -77,6 +83,7 @@ emcmake cmake -S "$GMSH_SRC" -B "$GMSH_BUILD" \
   -DENABLE_MED=OFF -DENABLE_CGNS=OFF -DENABLE_HDF5=OFF \
   -DENABLE_MESH=ON -DENABLE_PARSER=ON -DENABLE_POST=ON \
   -DENABLE_TESTS=OFF \
+  -DGMSH_PACKAGER="$GMSH_PACKAGER" -DGMSH_HOST=emscripten \
   "${occ_args[@]}"
 
 # HAVE_OPENMP is only a CMake variable (gmsh sources test the compiler's

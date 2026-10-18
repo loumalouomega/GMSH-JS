@@ -723,6 +723,63 @@ export interface GmshPlugin {
   run(name: string): number;
 }
 
+export interface GmshViewOption {
+  /** Set the numerical option `name' to value `value' for the view with tag `tag'. */
+  setNumber(tag: number, name: string, value: number): void;
+  /** Get the `value' of the numerical option `name' for the view with tag `tag'. */
+  getNumber(tag: number, name: string): { value: number };
+  /** Set the string option `name' to value `value' for the view with tag `tag'. */
+  setString(tag: number, name: string, value: string): void;
+  /** Get the `value' of the string option `name' for the view with tag `tag'. */
+  getString(tag: number, name: string): { value: string };
+  /** Set the color option `name' to the RGBA value (`r', `g', `b', `a') for the view with tag `tag', where `r', `g', `b' and `a' should be integers between 0 and 255. */
+  setColor(tag: number, name: string, r: number, g: number, b: number, a?: number): void;
+  /** Get the `r', `g', `b', `a' value of the color option `name' for the view with tag `tag'. */
+  getColor(tag: number, name: string): { r: number; g: number; b: number; a: number };
+  /** Copy the options from the view with tag `refTag' to the view with tag `tag'. */
+  copy(refTag: number, tag: number): void;
+}
+
+export interface GmshView {
+  /** Add a new post-processing view, with name `name'. If `tag' is positive use it (and remove the view with that tag if it already exists), otherwise associate a new tag. Return the view tag. */
+  add(name: string, tag?: number): number;
+  /** Remove the view with tag `tag'. */
+  remove(tag: number): void;
+  /** Get the index of the view with tag `tag' in the list of currently loaded views. This dynamic index (it can change when views are removed) is used to access view options. */
+  getIndex(tag: number): number;
+  /** Get the tags of all views. */
+  getTags(): { tags: number[] };
+  /** Add model-based post-processing data to the view with tag `tag'. `modelName' identifies the model the data is attached to. `dataType' specifies the type of data, currently either "NodeData", "ElementData" or "ElementNodeData". `step' specifies the identifier (>= 0) of the data in a sequence. `tags' gives the tags of the nodes or elements in the mesh to which the data is associated. `data' is a vector of the same length as `tags': each entry is the vector of double precision numbers representing the data associated with the corresponding tag. The optional `time' argument associate a time value with the data. `numComponents' gives the number of data components (1 for scalar data, 3 for vector data, etc.) per entity; if negative, it is automatically inferred (when possible) from the input data. `partition' allows one to specify data in several sub-sets. */
+  addModelData(tag: number, step: number, modelName: string, dataType: string, tags: number[], data: number[][], time?: number, numComponents?: number, partition?: number): void;
+  /** Add homogeneous model-based post-processing data to the view with tag `tag'. The arguments have the same meaning as in `addModelData', except that `data' is supposed to be homogeneous and is thus flattened in a single vector. For data types that can lead to different data sizes per tag (like "ElementNodeData"), the data should be padded. */
+  addHomogeneousModelData(tag: number, step: number, modelName: string, dataType: string, tags: number[], data: number[], time?: number, numComponents?: number, partition?: number): void;
+  /** Get model-based post-processing data from the view with tag `tag' at step `step'. Return the `data' associated to the nodes or the elements with tags `tags', as well as the `dataType' and the number of components `numComponents'. */
+  getModelData(tag: number, step: number): { dataType: string; tags: number[]; data: number[][]; time: number; numComponents: number };
+  /** Get homogeneous model-based post-processing data from the view with tag `tag' at step `step'. The arguments have the same meaning as in `getModelData', except that `data' is returned flattened in a single vector, with the appropriate padding if necessary. */
+  getHomogeneousModelData(tag: number, step: number): { dataType: string; tags: number[]; data: number[]; time: number; numComponents: number };
+  /** Add list-based post-processing data to the view with tag `tag'. List-based datasets are independent from any model and any mesh. `dataType' identifies the data by concatenating the field type ("S" for scalar, "V" for vector, "T" for tensor) and the element type ("P" for point, "L" for line, "T" for triangle, "S" for tetrahedron, "I" for prism, "H" for hexaHedron, "Y" for pyramid). For example `dataType' should be "ST" for a scalar field on triangles. `numEle' gives the number of elements in the data. `data' contains the data for the `numEle' elements, concatenated, with node coordinates followed by values per node, repeated for each step: [e1x1, ..., e1xn, e1y1, ..., e1yn, e1z1, ..., e1zn, e1v1..., e1vN, e2x1, ...]. */
+  addListData(tag: number, dataType: string, numEle: number, data: number[]): void;
+  /** Get list-based post-processing data from the view with tag `tag'. Return the types `dataTypes', the number of elements `numElements' for each data type and the `data' for each data type. If `returnAdaptive' is set, return the data obtained after adaptive refinement, if available. */
+  getListData(tag: number, returnAdaptive?: boolean): { dataType: string[]; numElements: number[]; data: number[][] };
+  /** Add a string to a list-based post-processing view with tag `tag'. If `coord' contains 3 coordinates the string is positioned in the 3D model space ("3D string"); if it contains 2 coordinates it is positioned in the 2D graphics viewport ("2D string"). `data' contains one or more (for multistep views) strings. `style' contains key-value pairs of styling parameters, concatenated. Available keys are "Font" (possible values: "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic", "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique", "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique", "Symbol", "ZapfDingbats", "Screen"), "FontSize" and "Align" (possible values: "Left" or "BottomLeft", "Center" or "BottomCenter", "Right" or "BottomRight", "TopLeft", "TopCenter", "TopRight", "CenterLeft", "CenterCenter", "CenterRight"). */
+  addListDataString(tag: number, coord: number[], data: string[], style?: string[]): void;
+  /** Get list-based post-processing data strings (2D strings if `dim' == 2, 3D strings if `dim' = 3) from the view with tag `tag'. Return the coordinates in `coord', the strings in `data' and the styles in `style'. */
+  getListDataStrings(tag: number, dim: number): { coord: number[]; data: string[]; style: string[] };
+  /** Set interpolation matrices for the element family `type' ("Line", "Triangle", "Quadrangle", "Tetrahedron", "Hexahedron", "Prism", "Pyramid") in the view `tag'. The approximation of the values over an element is written as a linear combination of `d' basis functions f_i(u, v, w) = sum_(j = 0, ..., `d' - 1) `coef'[i][j] u^`exp'[j][0] v^`exp'[j][1] w^`exp'[j][2], i = 0, ..., `d'-1, with u, v, w the coordinates in the reference element. The `coef' matrix (of size `d' x `d') and the `exp' matrix (of size `d' x 3) are stored as vectors, by row. If `dGeo' is positive, use `coefGeo' and `expGeo' to define the interpolation of the x, y, z coordinates of the element in terms of the u, v, w coordinates, in exactly the same way. If `d' < 0, remove the interpolation matrices. */
+  setInterpolationMatrices(tag: number, type: string, d: number, coef: number[], exp: number[], dGeo?: number, coefGeo?: number[], expGeo?: number[]): void;
+  /** Add a post-processing view as an `alias' of the reference view with tag `refTag'. If `copyOptions' is set, copy the options of the reference view. If `tag' is positive use it (and remove the view with that tag if it already exists), otherwise associate a new tag. Return the view tag. */
+  addAlias(refTag: number, copyOptions?: boolean, tag?: number): number;
+  /** Combine elements (if `what' == "elements") or steps (if `what' == "steps") of all views (`how' == "all"), all visible views (`how' == "visible") or all views having the same name (`how' == "name"). Remove original views if `remove' is set. */
+  combine(what: string, how: string, remove?: boolean, copyOptions?: boolean): void;
+  /** Probe the view `tag' for its `values' at point (`x', `y', `z'). If no match is found, `value' is returned empty. Return only the value at step `step' is `step' is positive. Return only values with `numComp' if `numComp' is positive. Return the gradient of the `values' if `gradient' is set. If `distanceMax' is zero, only return a result if an exact match inside an element in the view is found; if `distanceMax' is positive and an exact match is not found, return the value at the closest node if it is closer than `distanceMax'; if `distanceMax' is negative and an exact match is not found, always return the value at the closest node. The distance to the match is returned in `distance'. Return the result from the element described by its coordinates if `xElementCoord', `yElementCoord' and `zElementCoord' are provided. If `dim' is >= 0, return only matches from elements of the specified dimension. */
+  probe(tag: number, x: number, y: number, z: number, step?: number, numComp?: number, gradient?: boolean, distanceMax?: number, xElemCoord?: number[], yElemCoord?: number[], zElemCoord?: number[], dim?: number): { values: number[]; distance: number };
+  /** Write the view to a file `fileName'. The export format is determined by the file extension. Append to the file if `append' is set. */
+  write(tag: number, fileName: string, append?: boolean): void;
+  /** Set the global visibility of the view `tag' per window to `value', where `windowIndex' identifies the window in the window list. */
+  setVisibilityPerWindow(tag: number, value: number, windowIndex?: number): void;
+  option: GmshViewOption;
+}
+
 export interface Gmsh {
   /** Initialize the Gmsh API. This must be called before any call to the other functions in the API. If `argc' and `argv' (or just `argv' in Python or Julia) are provided, they will be handled in the same way as the command line arguments in the Gmsh app. If `readConfigFiles' is set, read system Gmsh configuration files (gmshrc and gmsh-options). If `run' is set, run in the same way as the Gmsh app, either interactively or in batch mode depending on the command line arguments. If `run' is not set, initializing the API sets the options "General.AbortOnError" to 2 and "General.Terminal" to 1. */
   initialize(readConfigFiles?: boolean, run?: boolean): void;
@@ -745,6 +802,7 @@ export interface Gmsh {
   option: GmshOption;
   parser: GmshParser;
   plugin: GmshPlugin;
+  view: GmshView;
 }
 
 export declare function initialize(
